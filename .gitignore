@@ -15,3 +15,7 @@
 local.properties
 
 google-services.json
+
+docs/
+
+.vscode/
