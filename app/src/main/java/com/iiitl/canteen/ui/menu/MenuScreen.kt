@@ -1,5 +1,6 @@
 package com.iiitl.canteen.ui.menu
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -82,10 +82,20 @@ private fun MenuItemRow(menuItem: MenuItem, onItemClick: (MenuItem) -> Unit) {
     val contentAlpha = if (menuItem.isAvailable) 1f else 0.38f
     val textColor = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha)
 
-    Surface(
-        onClick = { if (menuItem.isAvailable) onItemClick(menuItem) },
-        enabled = menuItem.isAvailable,
-        modifier = Modifier.fillMaxWidth()
+    // Box instead of Surface: Surface applies tonal elevation per nesting level
+    // (causing alternating backgrounds) and compounds its own disabled alpha on
+    // top of our textColor (making text near-invisible). Box is transparent and
+    // applies no implicit alpha.
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (menuItem.isAvailable) {
+                    Modifier.clickable { onItemClick(menuItem) }
+                } else {
+                    Modifier
+                }
+            )
     ) {
         Row(
             modifier = Modifier
