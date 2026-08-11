@@ -17,19 +17,8 @@ data class Order(
     val readyAt: Long? = null,
     val collectedAt: Long? = null
 ) {
-    /**
-     * The sum of [OrderItem.priceAtOrder] * [OrderItem.quantity] for every item
-     * where [OrderItem.isAvailable] is true.
-     *
-     * Declared as a `val` inside the class body (not a constructor parameter) so
-     * Firestore ignores it during deserialization — computed properties are not
-     * persisted. This is the idiomatic Kotlin alternative to a C++ member function
-     * that computes a value on demand.
-     *
-     * `sumOf` is a stdlib extension function equivalent to
-     * `std::accumulate` over a transformed range; it folds the collection into a
-     * single Double using the lambda as the element-to-number mapping.
-     */
+    // Not a constructor parameter, so Firestore never persists it.
+    // Recomputed on access so it always reflects the current items list.
     val availableTotal: Double
         get() = items
             .filter { it.isAvailable }
