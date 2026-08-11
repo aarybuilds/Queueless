@@ -84,7 +84,7 @@ class CafeOrderDataSource(private val firestore: FirebaseFirestore) {
     // atomically — avoids a lost-update if two writes hit the same document concurrently.
     suspend fun markItemsUnavailable(
         orderId: String,
-        unavailableItemIds: List<String>
+        itemAvailabilities: Map<String, Int>
     ): Result<Unit> = runCatching {
         firestore.runTransaction { transaction ->
             val docRef = ordersRef.document(orderId)
@@ -93,12 +93,14 @@ class CafeOrderDataSource(private val firestore: FirebaseFirestore) {
                 ?: throw Exception("Order not found.")
 
             val updatedItems: List<Map<String, Any?>> = order.items.map { item ->
+                val availableQty = itemAvailabilities[item.itemId] ?: item.quantity
+                val isAvailable = availableQty > 0
                 mapOf(
                     "itemId" to item.itemId,
                     "name" to item.name,
                     "priceAtOrder" to item.priceAtOrder,
-                    "quantity" to item.quantity,
-                    "isAvailable" to (item.itemId !in unavailableItemIds)
+                    "quantity" to if (isAvailable) availableQty else item.quantity,
+                    "isAvailable" to isAvailable
                 )
             }
 

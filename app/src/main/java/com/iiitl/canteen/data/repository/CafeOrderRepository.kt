@@ -21,8 +21,8 @@ class CafeOrderRepository(private val dataSource: CafeOrderDataSource) {
 
     suspend fun markItemsUnavailable(
         orderId: String,
-        unavailableItemIds: List<String>
-    ): Result<Unit> = dataSource.markItemsUnavailable(orderId, unavailableItemIds)
+        itemAvailabilities: Map<String, Int>
+    ): Result<Unit> = dataSource.markItemsUnavailable(orderId, itemAvailabilities)
 
     suspend fun getStaffName(staffUid: String): String =
         dataSource.getStaffName(staffUid)

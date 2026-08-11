@@ -74,9 +74,9 @@ class CafeOrderQueueViewModel(
         }
     }
 
-    fun markUnavailable(orderId: String, unavailableItemIds: List<String>) {
+    fun markUnavailable(orderId: String, itemAvailabilities: Map<String, Int>) {
         viewModelScope.launch {
-            cafeOrderRepository.markItemsUnavailable(orderId, unavailableItemIds).onFailure { error ->
+            cafeOrderRepository.markItemsUnavailable(orderId, itemAvailabilities).onFailure { error ->
                 _uiState.update { it.copy(errorMessage = error.message) }
             }
         }

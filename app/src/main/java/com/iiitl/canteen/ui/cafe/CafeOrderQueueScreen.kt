@@ -14,12 +14,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Snackbar
@@ -46,7 +51,7 @@ fun CafeOrderQueueScreen(
     uiState: CafeQueueUiState,
     onClaimOrder: (String) -> Unit,
     onUpdateStatus: (String, OrderStatus) -> Unit,
-    onMarkUnavailable: (String, List<String>) -> Unit,
+    onMarkUnavailable: (String, Map<String, Int>) -> Unit,
     onClearClaimError: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -98,10 +103,10 @@ fun CafeOrderQueueScreen(
                         item { Spacer(modifier = Modifier.height(12.dp)) }
                         item {
                             Text(
-                                text = "Ready for Pickup (${readyOrders.size})",
+                                text = "Ready for Collection (${readyOrders.size})",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2E7D32),
+                                color = Color(0xFF1B5E20),
                                 modifier = Modifier.padding(bottom = 4.dp)
                             )
                         }
@@ -141,20 +146,17 @@ private fun OrderCard(
     isReady: Boolean,
     onClaimOrder: (String) -> Unit,
     onUpdateStatus: (String, OrderStatus) -> Unit,
-    onMarkUnavailable: (String, List<String>) -> Unit
+    onMarkUnavailable: (String, Map<String, Int>) -> Unit
 ) {
     var showUnavailableChooser by remember(order.id) { mutableStateOf(false) }
-    var unavailableSelections by remember(order.id) { mutableStateOf(setOf<String>()) }
 
-    val cardBackground = if (isReady)
-        Color(0xFFE8F5E9)
-    else
-        MaterialTheme.colorScheme.surface
+    val border = if (isReady) BorderStroke(2.dp, Color(0xFF1B5E20)) else null
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBackground),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = border,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -173,7 +175,7 @@ private fun OrderCard(
                     text = order.status.name,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = if (isReady) Color(0xFF1B5E20) else MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -196,21 +198,16 @@ private fun OrderCard(
                     if (showUnavailableChooser) {
                         UnavailableChooser(
                             items = order.items,
-                            selections = unavailableSelections,
-                            onToggle = { itemId ->
-                                unavailableSelections = if (itemId in unavailableSelections)
-                                    unavailableSelections - itemId
-                                else
-                                    unavailableSelections + itemId
-                            },
-                            onConfirm = {
-                                onMarkUnavailable(order.id, unavailableSelections.toList())
+                            onMarkUnavailable = { availabilities ->
+                                onMarkUnavailable(order.id, availabilities)
                                 showUnavailableChooser = false
-                                unavailableSelections = emptySet()
+                            },
+                            onRejectOrder = {
+                                onUpdateStatus(order.id, OrderStatus.REJECTED)
+                                showUnavailableChooser = false
                             },
                             onCancel = {
                                 showUnavailableChooser = false
-                                unavailableSelections = emptySet()
                             }
                         )
                     } else {
@@ -311,47 +308,146 @@ private fun OrderItemLine(item: OrderItem) {
 @Composable
 private fun UnavailableChooser(
     items: List<OrderItem>,
-    selections: Set<String>,
-    onToggle: (String) -> Unit,
-    onConfirm: () -> Unit,
+    onMarkUnavailable: (Map<String, Int>) -> Unit,
+    onRejectOrder: () -> Unit,
     onCancel: () -> Unit
 ) {
+    var availableQuantities by remember(items) {
+        mutableStateOf(items.associate { it.itemId to it.quantity })
+    }
+
+    val allUnavailable = items.isNotEmpty() && items.all { (availableQuantities[it.itemId] ?: 0) == 0 }
+    val noneReduced = items.all { (availableQuantities[it.itemId] ?: it.quantity) == it.quantity }
+    val isPartial = !allUnavailable && !noneReduced
+
     Column {
         Text(
-            text = "Select items you cannot prepare:",
+            text = "Adjust available quantities:",
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.error,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 4.dp)
         )
+
+        // Select All / Mark All Unavailable Checkbox
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+        ) {
+            Checkbox(
+                checked = allUnavailable,
+                onCheckedChange = { checkAll ->
+                    availableQuantities = if (checkAll) {
+                        items.associate { it.itemId to 0 }
+                    } else {
+                        items.associate { it.itemId to it.quantity }
+                    }
+                }
+            )
+            Text(
+                text = "Mark all unavailable (Reject order)",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
+        // Per-item quantity selector
         items.forEach { item ->
+            val currentQty = availableQuantities[item.itemId] ?: item.quantity
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Checkbox(
-                    checked = item.itemId in selections,
-                    onCheckedChange = { onToggle(item.itemId) }
-                )
-                Text(
-                    text = "${item.name} × ${item.quantity}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = item.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Ordered: ${item.quantity} | Available: $currentQty",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (currentQty == 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = {
+                            if (currentQty > 0) {
+                                availableQuantities = availableQuantities + (item.itemId to (currentQty - 1))
+                            }
+                        },
+                        enabled = currentQty > 0
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Remove,
+                            contentDescription = "Reduce available quantity",
+                            tint = if (currentQty > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
+
+                    Text(
+                        text = "$currentQty",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+
+                    IconButton(
+                        onClick = {
+                            if (currentQty < item.quantity) {
+                                availableQuantities = availableQuantities + (item.itemId to (currentQty + 1))
+                            }
+                        },
+                        enabled = currentQty < item.quantity
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Increase available quantity",
+                            tint = if (currentQty < item.quantity) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
+                }
             }
         }
+
         Spacer(modifier = Modifier.height(8.dp))
+
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(
-                onClick = onConfirm,
-                enabled = selections.isNotEmpty(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                ),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Notify student")
+            if (allUnavailable) {
+                Button(
+                    onClick = onRejectOrder,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Reject order", fontWeight = FontWeight.Bold)
+                }
+            } else {
+                Button(
+                    onClick = { onMarkUnavailable(availableQuantities) },
+                    enabled = isPartial,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Notify student", fontWeight = FontWeight.Bold)
+                }
             }
+
             TextButton(
                 onClick = onCancel,
                 modifier = Modifier.weight(1f)
