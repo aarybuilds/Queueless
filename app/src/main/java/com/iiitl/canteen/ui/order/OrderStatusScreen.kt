@@ -48,7 +48,7 @@ private fun OrderStatus.toDisplayString(): String = when (this) {
     OrderStatus.READY                 -> "Your order is ready! Go collect it."
     OrderStatus.COLLECTED             -> "Order collected"
     OrderStatus.CANCELLED             -> "Order cancelled"
-    OrderStatus.REJECTED              -> "Order rejected by the cafeteria"
+    OrderStatus.REJECTED              -> "Your order was rejected — items were unavailable at the canteen."
     OrderStatus.EXPIRED               -> "Order expired — not collected in time"
 }
 
@@ -146,6 +146,12 @@ private fun OrderContent(
     onConfirmReducedOrder: () -> Unit,
     onCancelOrder: () -> Unit
 ) {
+    val isTerminal = order.status in listOf(
+        OrderStatus.REJECTED,
+        OrderStatus.CANCELLED,
+        OrderStatus.EXPIRED
+    )
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -169,11 +175,10 @@ private fun OrderContent(
                     Text(
                         text = order.status.toDisplayString(),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (order.status == OrderStatus.REJECTED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
-                // Colored status badge
                 Surface(
                     color = order.status.badgeColor(),
                     shape = RoundedCornerShape(16.dp)
@@ -189,9 +194,11 @@ private fun OrderContent(
             }
         }
 
-        item { StatusProgressRow(currentStatus = order.status) }
-
-        item { HorizontalDivider() }
+        // Hide progress bar for terminal states (REJECTED, CANCELLED, EXPIRED)
+        if (!isTerminal) {
+            item { StatusProgressRow(currentStatus = order.status) }
+            item { HorizontalDivider() }
+        }
 
         item { StatusBanner(order = order) }
 
@@ -354,9 +361,11 @@ private fun StatusBanner(order: Order) {
             modifier = Modifier.fillMaxWidth()
         )
         OrderStatus.REJECTED -> Text(
-            text = "Your order was rejected by the cafeteria.",
+            text = "Your order was rejected — items were unavailable at the canteen.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.fillMaxWidth()
         )
         OrderStatus.CANCELLED -> Text(
             text = "This order was cancelled.",
