@@ -1,47 +1,41 @@
 package com.iiitl.canteen
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.iiitl.canteen.ui.auth.LoginScreen
+import com.iiitl.canteen.ui.auth.LoginViewModel
 import com.iiitl.canteen.ui.theme.QueuelessTheme
 
 class MainActivity : ComponentActivity() {
+
+    // AppContainer lives on the Activity so the ViewModel factory can reach it.
+    // The ViewModel itself survives rotation; the container just needs to outlive
+    // the factory call, which happens on the first composition.
+    private val appContainer = AppContainer()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             QueuelessTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                val loginViewModel: LoginViewModel = viewModel(
+                    factory = appContainer.loginViewModelFactory
+                )
+
+                // Temporary: log auth state until navigation is wired up.
+                LaunchedEffect(Unit) {
+                    appContainer.authRepository.observeAuthState().collect { isLoggedIn ->
+                        Log.d("AuthState", "User logged in: $isLoggedIn")
+                    }
                 }
+
+                LoginScreen(viewModel = loginViewModel)
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    QueuelessTheme {
-        Greeting("Android")
     }
 }
