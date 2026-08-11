@@ -6,9 +6,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.iiitl.canteen.ui.auth.LoginScreen
-import com.iiitl.canteen.ui.auth.LoginViewModel
+import com.iiitl.canteen.ui.cafeteria.CafeteriaSelectionScreen
+import com.iiitl.canteen.ui.menu.MenuScreen
+import com.iiitl.canteen.ui.menu.MenuViewModel
 import com.iiitl.canteen.ui.theme.QueuelessTheme
 
 class MainActivity : ComponentActivity() {
@@ -23,10 +29,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             QueuelessTheme {
-                val loginViewModel: LoginViewModel = viewModel(
-                    factory = appContainer.loginViewModelFactory
-                )
-
                 // Temporary: log auth state until navigation is wired up.
                 LaunchedEffect(Unit) {
                     appContainer.authRepository.observeAuthState().collect { isLoggedIn ->
@@ -34,7 +36,28 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                LoginScreen(viewModel = loginViewModel)
+                // Temporary state-based routing — will be replaced with NavHost.
+                // null means no cafeteria has been selected yet.
+                var selectedCafeteriaId by remember { mutableStateOf<String?>(null) }
+
+                when (val cafeteriaId = selectedCafeteriaId) {
+                    null -> CafeteriaSelectionScreen(
+                        onCafeteriaSelected = { selectedCafeteriaId = it }
+                    )
+                    else -> {
+                        // key() forces a new ViewModel when the cafeteria changes,
+                        // discarding the previous cafeteria's state cleanly.
+                        val menuViewModel: MenuViewModel = viewModel(
+                            key = cafeteriaId,
+                            factory = appContainer.menuViewModelFactory(cafeteriaId)
+                        )
+                        val uiState by menuViewModel.uiState.collectAsStateWithLifecycle()
+                        MenuScreen(
+                            uiState = uiState,
+                            onItemClick = { item -> Log.d("MenuScreen", "Clicked: ${item.name}") }
+                        )
+                    }
+                }
             }
         }
     }
