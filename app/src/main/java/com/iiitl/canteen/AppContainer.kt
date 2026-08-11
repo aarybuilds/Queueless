@@ -6,10 +6,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.iiitl.canteen.data.remote.AuthDataSource
 import com.iiitl.canteen.data.remote.MenuDataSource
+import com.iiitl.canteen.data.remote.OrderDataSource
 import com.iiitl.canteen.data.repository.AuthRepository
 import com.iiitl.canteen.data.repository.MenuRepository
+import com.iiitl.canteen.data.repository.OrderRepository
 import com.iiitl.canteen.ui.auth.LoginViewModel
 import com.iiitl.canteen.ui.menu.MenuViewModel
+import com.iiitl.canteen.ui.order.PlaceOrderViewModel
 
 // Manual DI: we hold singleton Firebase instances here and build the
 // repository graph by hand. We're skipping Hilt deliberately — annotation
@@ -51,5 +54,20 @@ class AppContainer {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                 MenuViewModel(menuRepository, cafeteriaId) as T
+        }
+
+    private val orderDataSource: OrderDataSource by lazy {
+        OrderDataSource(firestore)
+    }
+
+    val orderRepository: OrderRepository by lazy {
+        OrderRepository(orderDataSource)
+    }
+
+    val placeOrderViewModelFactory: ViewModelProvider.Factory =
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                PlaceOrderViewModel(orderRepository, authRepository) as T
         }
 }
