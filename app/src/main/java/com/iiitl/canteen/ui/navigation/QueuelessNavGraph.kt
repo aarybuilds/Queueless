@@ -32,6 +32,8 @@ import com.iiitl.canteen.ui.order.OrderHistoryViewModel
 import com.iiitl.canteen.ui.order.OrderStatusScreen
 import com.iiitl.canteen.ui.order.OrderStatusViewModel
 import com.iiitl.canteen.ui.order.PlaceOrderViewModel
+import com.iiitl.canteen.ui.profile.ProfileScreen
+import com.iiitl.canteen.ui.profile.ProfileViewModel
 import kotlinx.coroutines.launch
 
 object Routes {
@@ -42,6 +44,7 @@ object Routes {
     const val ORDER_STATUS = "order_status/{orderId}"
     const val ORDER_HISTORY = "order_history"
     const val CAFE_QUEUE = "cafe_queue/{cafeteriaId}"
+    const val PROFILE = "profile"
 
     fun menu(cafeteriaId: String) = "menu/$cafeteriaId"
     fun cart(cafeteriaId: String) = "cart/$cafeteriaId"
@@ -107,6 +110,9 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
                             navController.navigate(Routes.menu(cafeteriaId))
                         }
                     }
+                },
+                onProfileClick = {
+                    navController.navigate(Routes.PROFILE)
                 }
             )
         }
@@ -136,6 +142,9 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
                 },
                 onViewCartClick = {
                     navController.navigate(Routes.cart(cafeteriaId))
+                },
+                onProfileClick = {
+                    navController.navigate(Routes.PROFILE)
                 }
             )
         }
@@ -267,6 +276,29 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
                 },
                 onClearClaimError = {
                     cafeQueueViewModel.clearClaimError()
+                }
+            )
+        }
+
+        composable(Routes.PROFILE) {
+            val profileViewModel: ProfileViewModel = viewModel(
+                factory = appContainer.profileViewModelFactory
+            )
+            val profileUiState by profileViewModel.uiState.collectAsStateWithLifecycle()
+
+            ProfileScreen(
+                uiState = profileUiState,
+                onLogout = {
+                    profileViewModel.logout()
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                onViewHistory = {
+                    navController.navigate(Routes.ORDER_HISTORY)
+                },
+                onBack = {
+                    navController.popBackStack()
                 }
             )
         }

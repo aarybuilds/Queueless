@@ -104,4 +104,10 @@ class AppContainer {
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                 OrderHistoryViewModel(orderRepository, studentUid) as T
         }
+
+    val profileViewModelFactory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            com.iiitl.canteen.ui.profile.ProfileViewModel(authRepository) as T
+    }
 }
