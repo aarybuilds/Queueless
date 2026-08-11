@@ -70,14 +70,23 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
             true -> {
                 val currentRoute = navController.currentBackStackEntry?.destination?.route
                 if (currentRoute == Routes.LOGIN || currentRoute == null) {
-                    val verified = appContainer.authRepository.isEmailVerified()
-                    if (verified) {
+                    val uid = appContainer.authRepository.getCurrentUserId()
+                    val role = if (uid != null) appContainer.authRepository.getUserRole(uid) else UserRole.STUDENT
+
+                    if (role == UserRole.CAFE_STAFF) {
                         navController.navigate(Routes.CAFETERIA_SELECTION) {
                             popUpTo(Routes.LOGIN) { inclusive = true }
                         }
                     } else {
-                        navController.navigate(Routes.EMAIL_VERIFICATION) {
-                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        val verified = appContainer.authRepository.isEmailVerified()
+                        if (verified) {
+                            navController.navigate(Routes.CAFETERIA_SELECTION) {
+                                popUpTo(Routes.LOGIN) { inclusive = true }
+                            }
+                        } else {
+                            navController.navigate(Routes.EMAIL_VERIFICATION) {
+                                popUpTo(Routes.LOGIN) { inclusive = true }
+                            }
                         }
                     }
                 }

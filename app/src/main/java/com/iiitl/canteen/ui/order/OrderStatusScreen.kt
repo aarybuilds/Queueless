@@ -1,5 +1,6 @@
 package com.iiitl.canteen.ui.order
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,16 +13,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,7 +40,6 @@ import com.iiitl.canteen.data.model.Order
 import com.iiitl.canteen.data.model.OrderItem
 import com.iiitl.canteen.data.model.OrderStatus
 
-// Maps each OrderStatus to a student-facing sentence.
 private fun OrderStatus.toDisplayString(): String = when (this) {
     OrderStatus.PLACED                -> "Order placed, waiting for confirmation"
     OrderStatus.AWAITING_CONFIRMATION -> "Some items are unavailable — please confirm or cancel"
@@ -55,8 +60,18 @@ private fun OrderStatus.toStepLabel(): String = when (this) {
     else                  -> name
 }
 
-// Steps shown in the linear progress row. Terminal/error states are excluded
-// because they don't fit a linear progression.
+private fun OrderStatus.badgeColor(): Color = when (this) {
+    OrderStatus.PLACED                -> Color(0xFF757575)
+    OrderStatus.ACCEPTED              -> Color(0xFF1976D2)
+    OrderStatus.PREPARING             -> Color(0xFFF57C00)
+    OrderStatus.READY                 -> Color(0xFF388E3C)
+    OrderStatus.AWAITING_CONFIRMATION -> Color(0xFFE65100)
+    OrderStatus.COLLECTED             -> Color(0xFF2E7D32)
+    OrderStatus.CANCELLED,
+    OrderStatus.REJECTED,
+    OrderStatus.EXPIRED               -> Color(0xFFD32F2F)
+}
+
 private val progressSteps = listOf(
     OrderStatus.PLACED,
     OrderStatus.ACCEPTED,
@@ -64,6 +79,7 @@ private val progressSteps = listOf(
     OrderStatus.READY
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderStatusScreen(
     uiState: OrderStatusUiState,
@@ -72,32 +88,53 @@ fun OrderStatusScreen(
     onCancelOrder: () -> Unit,
     onViewHistory: () -> Unit = {}
 ) {
-    when {
-        uiState.isLoading -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        }
-
-        uiState.errorMessage != null && uiState.order == null -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = uiState.errorMessage,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(24.dp)
-                )
-            }
-        }
-
-        uiState.order != null -> {
-            OrderContent(
-                order = uiState.order,
-                onBack = onBack,
-                onConfirmReducedOrder = onConfirmReducedOrder,
-                onCancelOrder = onCancelOrder,
-                onViewHistory = onViewHistory
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Order Tracker", fontWeight = FontWeight.Bold) },
+                actions = {
+                    IconButton(onClick = onViewHistory) {
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = "Order History"
+                        )
+                    }
+                }
             )
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
+            when {
+                uiState.isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+                uiState.errorMessage != null && uiState.order == null -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = uiState.errorMessage,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(24.dp)
+                        )
+                    }
+                }
+
+                uiState.order != null -> {
+                    OrderContent(
+                        order = uiState.order,
+                        onBack = onBack,
+                        onConfirmReducedOrder = onConfirmReducedOrder,
+                        onCancelOrder = onCancelOrder
+                    )
+                }
+            }
         }
     }
 }
@@ -107,14 +144,13 @@ private fun OrderContent(
     order: Order,
     onBack: () -> Unit,
     onConfirmReducedOrder: () -> Unit,
-    onCancelOrder: () -> Unit,
-    onViewHistory: () -> Unit
+    onCancelOrder: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
             Row(
@@ -125,35 +161,40 @@ private fun OrderContent(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Order #${order.orderNumber}",
-                        style = MaterialTheme.typography.displaySmall,
+                        style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = order.status.toDisplayString(),
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = onViewHistory) {
-                    Icon(
-                        imageVector = Icons.Default.History,
-                        contentDescription = "Order History"
+
+                // Colored status badge
+                Surface(
+                    color = order.status.badgeColor(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        text = order.status.name,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
             }
         }
 
-        item { Spacer(modifier = Modifier.height(4.dp)) }
-
         item { StatusProgressRow(currentStatus = order.status) }
 
         item { HorizontalDivider() }
 
-        // Status-specific banners
         item { StatusBanner(order = order) }
 
-        // AWAITING_CONFIRMATION action buttons
         if (order.status == OrderStatus.AWAITING_CONFIRMATION) {
             item {
                 val unavailable = order.items.filter { !it.isAvailable }
@@ -181,6 +222,7 @@ private fun OrderContent(
                 ) {
                     Button(
                         onClick = onConfirmReducedOrder,
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("Confirm reduced order")
@@ -190,6 +232,7 @@ private fun OrderContent(
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error
                         ),
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("Cancel order")
@@ -202,8 +245,9 @@ private fun OrderContent(
 
         item {
             Text(
-                text = "Items",
+                text = "Order Details",
                 style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -221,19 +265,28 @@ private fun OrderContent(
             ) {
                 Text(
                     text = "Total",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "₹${"%.2f".format(order.totalAmount)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
 
         item {
-            Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
                 Text("Back")
             }
         }
@@ -249,41 +302,39 @@ private fun StatusProgressRow(currentStatus: OrderStatus) {
     ) {
         progressSteps.forEachIndexed { index, step ->
             val isPast = progressSteps.indexOf(currentStatus).let { it >= 0 && index <= it }
-            val color = if (isPast) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.outlineVariant
+            val dotColor = if (isPast) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.outlineVariant
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .padding(2.dp),
+                    modifier = Modifier.size(20.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Filled dot for reached steps, hollow for upcoming.
-                    androidx.compose.foundation.Canvas(modifier = Modifier.size(10.dp)) {
-                        drawCircle(color = color)
+                    Canvas(modifier = Modifier.size(16.dp)) {
+                        drawCircle(color = dotColor)
                     }
                 }
                 Text(
                     text = step.toStepLabel(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = color,
+                    fontWeight = if (isPast) FontWeight.Bold else FontWeight.Normal,
+                    color = dotColor,
                     overflow = TextOverflow.Visible,
                     maxLines = 1,
                     textAlign = TextAlign.Center
                 )
             }
 
-            // Connector line between dots (except after the last step)
             if (index < progressSteps.lastIndex) {
                 val lineColor = if (progressSteps.indexOf(currentStatus).let { it >= 0 && index < it })
                     MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(2.dp)
+                        .height(3.dp)
+                        .padding(horizontal = 4.dp)
                 ) {
-                    androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
                         drawRect(color = lineColor)
                     }
                 }
@@ -298,7 +349,8 @@ private fun StatusBanner(order: Order) {
         OrderStatus.READY -> Text(
             text = "Your order is ready! Go collect it.",
             style = MaterialTheme.typography.titleMedium,
-            color = Color(0xFF2E7D32),  // Material green 800 — readable on both light and dark
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF388E3C),
             modifier = Modifier.fillMaxWidth()
         )
         OrderStatus.REJECTED -> Text(
@@ -323,11 +375,11 @@ private fun StatusBanner(order: Order) {
 @Composable
 private fun OrderItemRow(orderItem: OrderItem) {
     val textColor = if (orderItem.isAvailable) MaterialTheme.colorScheme.onSurface
-                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
@@ -339,6 +391,7 @@ private fun OrderItemRow(orderItem: OrderItem) {
         Text(
             text = "₹${"%.2f".format(orderItem.priceAtOrder * orderItem.quantity)}",
             style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
             color = textColor
         )
     }

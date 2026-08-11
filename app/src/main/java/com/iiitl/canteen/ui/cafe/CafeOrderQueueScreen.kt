@@ -1,9 +1,10 @@
 package com.iiitl.canteen.ui.cafe
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -55,7 +57,7 @@ fun CafeOrderQueueScreen(
 
             uiState.orders.isEmpty() -> {
                 Text(
-                    text = "No active orders",
+                    text = "No active orders in queue",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.align(Alignment.Center)
@@ -63,22 +65,21 @@ fun CafeOrderQueueScreen(
             }
 
             else -> {
-                // READY orders are visually separated: staff must collect them
-                // differently from orders still in progress. Grouping prevents
-                // READY orders from getting buried in a long active queue.
                 val readyOrders = uiState.orders.filter { it.status == OrderStatus.READY }
                 val activeOrders = uiState.orders.filter { it.status != OrderStatus.READY }
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(16.dp)
                 ) {
                     if (activeOrders.isNotEmpty()) {
                         item {
                             Text(
-                                text = "Active Orders",
+                                text = "Active Queue (${activeOrders.size})",
                                 style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(bottom = 4.dp)
                             )
                         }
@@ -94,11 +95,12 @@ fun CafeOrderQueueScreen(
                     }
 
                     if (readyOrders.isNotEmpty()) {
-                        item { Spacer(modifier = Modifier.height(8.dp)) }
+                        item { Spacer(modifier = Modifier.height(12.dp)) }
                         item {
                             Text(
-                                text = "Ready for Collection",
+                                text = "Ready for Pickup (${readyOrders.size})",
                                 style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
                                 color = Color(0xFF2E7D32),
                                 modifier = Modifier.padding(bottom = 4.dp)
                             )
@@ -117,7 +119,6 @@ fun CafeOrderQueueScreen(
             }
         }
 
-        // Snackbar for transient claim errors — auto-dismissed after 3 s.
         if (uiState.claimError != null) {
             LaunchedEffect(uiState.claimError) {
                 delay(3000)
@@ -142,42 +143,53 @@ private fun OrderCard(
     onUpdateStatus: (String, OrderStatus) -> Unit,
     onMarkUnavailable: (String, List<String>) -> Unit
 ) {
-    // Local state for the "Can't prepare" item checklist — pure UI concern,
-    // doesn't belong in the ViewModel.
     var showUnavailableChooser by remember(order.id) { mutableStateOf(false) }
     var unavailableSelections by remember(order.id) { mutableStateOf(setOf<String>()) }
 
     val cardBackground = if (isReady)
-        Color(0xFFE8F5E9)  // light green tint for READY group
+        Color(0xFFE8F5E9)
     else
-        MaterialTheme.colorScheme.surfaceVariant
+        MaterialTheme.colorScheme.surface
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = cardBackground),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "#${order.orderNumber}",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = order.status.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
 
-            // Large order number — the staff's primary reference at the counter.
             Text(
-                text = "#${order.orderNumber}",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = order.studentName,
+                text = "${order.studentName} (${order.studentRollNumber})",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             order.items.forEach { item ->
                 OrderItemLine(item = item)
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             when (order.status) {
                 OrderStatus.PLACED -> {
@@ -202,15 +214,25 @@ private fun OrderCard(
                             }
                         )
                     } else {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Button(
                                 onClick = { onClaimOrder(order.id) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF2E7D32),
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text("Accept")
+                                Text("Accept", fontWeight = FontWeight.Bold)
                             }
                             OutlinedButton(
                                 onClick = { showUnavailableChooser = true },
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                ),
+                                shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text("Can't prepare")
@@ -221,8 +243,8 @@ private fun OrderCard(
 
                 OrderStatus.AWAITING_CONFIRMATION -> {
                     Text(
-                        text = "Waiting for student confirmation",
-                        style = MaterialTheme.typography.bodySmall,
+                        text = "Waiting for student confirmation...",
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -234,25 +256,33 @@ private fun OrderCard(
                         "Start preparing" else "Mark Ready"
                     Button(
                         onClick = { onUpdateStatus(order.id, nextStatus) },
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(label)
+                        Text(label, fontWeight = FontWeight.Bold)
                     }
                 }
 
                 OrderStatus.READY -> {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Button(
                             onClick = { onUpdateStatus(order.id, OrderStatus.COLLECTED) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF2E7D32),
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Collected")
+                            Text("Collected", fontWeight = FontWeight.Bold)
                         }
                         OutlinedButton(
                             onClick = { onUpdateStatus(order.id, OrderStatus.EXPIRED) },
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = MaterialTheme.colorScheme.error
                             ),
+                            shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("Not collected")
@@ -260,7 +290,7 @@ private fun OrderCard(
                     }
                 }
 
-                else -> { /* terminal states don't appear in the active queue */ }
+                else -> { /* Terminal states */ }
             }
         }
     }
@@ -273,6 +303,7 @@ private fun OrderItemLine(item: OrderItem) {
     Text(
         text = "• ${item.name} × ${item.quantity}" + if (!item.isAvailable) " (unavailable)" else "",
         style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.Medium,
         color = color
     )
 }
@@ -289,6 +320,7 @@ private fun UnavailableChooser(
         Text(
             text = "Select items you cannot prepare:",
             style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.error,
             modifier = Modifier.padding(bottom = 4.dp)
         )
         items.forEach { item ->
@@ -300,7 +332,11 @@ private fun UnavailableChooser(
                     checked = item.itemId in selections,
                     onCheckedChange = { onToggle(item.itemId) }
                 )
-                Text(text = "${item.name} × ${item.quantity}", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = "${item.name} × ${item.quantity}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -308,6 +344,10 @@ private fun UnavailableChooser(
             Button(
                 onClick = onConfirm,
                 enabled = selections.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                ),
+                shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.weight(1f)
             ) {
                 Text("Notify student")
