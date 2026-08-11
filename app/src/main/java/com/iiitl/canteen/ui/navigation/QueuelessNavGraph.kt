@@ -171,12 +171,20 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
             val cartViewModel: CartViewModel = viewModel(viewModelStoreOwner = backStackEntry)
 
             val menuUiState by menuViewModel.uiState.collectAsStateWithLifecycle()
+            val cartUiState by cartViewModel.uiState.collectAsStateWithLifecycle()
 
             MenuScreen(
                 uiState = menuUiState,
+                cartItems = cartUiState.items,
                 cafeteriaId = cafeteriaId,
                 onItemClick = { menuItem ->
                     cartViewModel.addItem(menuItem)
+                },
+                onAddItem = { menuItem ->
+                    cartViewModel.addItem(menuItem)
+                },
+                onRemoveItem = { menuItem ->
+                    cartViewModel.removeItem(menuItem)
                 },
                 onBackClick = {
                     navController.popBackStack()

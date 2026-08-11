@@ -48,7 +48,7 @@ private fun OrderStatus.toDisplayString(): String = when (this) {
     OrderStatus.READY                 -> "Your order is ready! Go collect it."
     OrderStatus.COLLECTED             -> "Order collected"
     OrderStatus.CANCELLED             -> "Order cancelled"
-    OrderStatus.REJECTED              -> "Your order was rejected — items were unavailable at the canteen."
+    OrderStatus.REJECTED              -> "Order rejected"
     OrderStatus.EXPIRED               -> "Order expired — not collected in time"
 }
 
