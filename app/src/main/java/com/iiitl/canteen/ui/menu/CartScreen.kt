@@ -45,6 +45,7 @@ fun CartScreen(
         Text(
             text = "Your Cart",
             style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
@@ -80,11 +81,13 @@ fun CartScreen(
         ) {
             Text(
                 text = "Total",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = "₹${"%.2f".format(uiState.totalAmount)}",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
 
@@ -126,7 +129,8 @@ private fun CartItemRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = menuItem.name,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = "₹${"%.2f".format(menuItem.price)} × $quantity = ₹${"%.2f".format(menuItem.price * quantity)}",
@@ -137,13 +141,16 @@ private fun CartItemRow(
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onRemove) {
-                // Minus icon composed from the Add icon shape via rotation is not
-                // reliable — use a Text label for the decrement button instead.
-                Text(text = "−", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    text = "−",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
             Text(
                 text = quantity.toString(),
                 style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
             IconButton(onClick = onAdd) {

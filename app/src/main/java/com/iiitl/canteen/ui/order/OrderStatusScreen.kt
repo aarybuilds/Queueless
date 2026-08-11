@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.iiitl.canteen.data.model.Order
 import com.iiitl.canteen.data.model.OrderItem
@@ -44,6 +45,14 @@ private fun OrderStatus.toDisplayString(): String = when (this) {
     OrderStatus.CANCELLED             -> "Order cancelled"
     OrderStatus.REJECTED              -> "Order rejected by the cafeteria"
     OrderStatus.EXPIRED               -> "Order expired — not collected in time"
+}
+
+private fun OrderStatus.toStepLabel(): String = when (this) {
+    OrderStatus.PLACED    -> "Placed"
+    OrderStatus.ACCEPTED  -> "Accepted"
+    OrderStatus.PREPARING -> "Preparing"
+    OrderStatus.READY     -> "Ready"
+    else                  -> name
 }
 
 // Steps shown in the linear progress row. Terminal/error states are excluded
@@ -117,7 +126,8 @@ private fun OrderContent(
                     Text(
                         text = "Order #${order.orderNumber}",
                         style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = order.status.toDisplayString(),
@@ -191,7 +201,11 @@ private fun OrderContent(
         item { HorizontalDivider() }
 
         item {
-            Text("Items", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = "Items",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
 
         items(order.items) { orderItem ->
@@ -205,10 +219,15 @@ private fun OrderContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Total", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "₹${"%.2f".format(order.totalAmount)}",
-                    style = MaterialTheme.typography.titleMedium
+                    text = "Total",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "₹${"%.2f".format(order.totalAmount)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -246,9 +265,12 @@ private fun StatusProgressRow(currentStatus: OrderStatus) {
                     }
                 }
                 Text(
-                    text = step.name.take(4),  // Abbreviate to fit row
+                    text = step.toStepLabel(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = color
+                    color = color,
+                    overflow = TextOverflow.Visible,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center
                 )
             }
 
