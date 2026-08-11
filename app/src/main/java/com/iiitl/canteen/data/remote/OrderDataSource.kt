@@ -1,6 +1,7 @@
 package com.iiitl.canteen.data.remote
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.iiitl.canteen.data.model.Order
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,20 @@ class OrderDataSource(private val firestore: FirebaseFirestore) {
                 if (error != null || snapshot == null) return@addSnapshotListener
                 // toObject returns null if the document does not exist.
                 trySend(snapshot.toObject(Order::class.java))
+            }
+        awaitClose { registration.remove() }
+    }
+
+    // Requires a composite index on (studentUid ASC, placedAt DESC).
+    // Firestore cannot serve this query without it; see docs/OrderStatusLayer.md.
+    fun observeStudentOrders(studentUid: String): Flow<List<Order>> = callbackFlow {
+        val registration = firestore.collection("orders")
+            .whereEqualTo("studentUid", studentUid)
+            .orderBy("placedAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) return@addSnapshotListener
+                val orders = snapshot.documents.mapNotNull { it.toObject(Order::class.java) }
+                trySend(orders)
             }
         awaitClose { registration.remove() }
     }

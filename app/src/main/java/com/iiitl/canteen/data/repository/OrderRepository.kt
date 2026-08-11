@@ -53,4 +53,7 @@ class OrderRepository(private val orderDataSource: OrderDataSource) {
 
     fun observeOrder(orderId: String): Flow<Order?> =
         orderDataSource.observeOrder(orderId)
+
+    fun observeStudentOrders(studentUid: String): Flow<List<Order>> =
+        orderDataSource.observeStudentOrders(studentUid)
 }
