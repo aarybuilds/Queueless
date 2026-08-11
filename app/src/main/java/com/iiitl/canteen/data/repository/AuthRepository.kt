@@ -54,6 +54,17 @@ class AuthRepository(
 
     fun getCurrentUserId(): String? = authDataSource.getCurrentUserId()
 
+    fun getCurrentUserEmail(): String? = authDataSource.getCurrentUserEmail()
+
+    // Reloads user record from server to get fresh verification flag instead of cached state.
+    suspend fun isEmailVerified(): Boolean = runCatching {
+        authDataSource.reloadUser()
+        authDataSource.isEmailVerified()
+    }.getOrDefault(false)
+
+    suspend fun sendEmailVerification(): Result<Unit> =
+        authDataSource.sendEmailVerification()
+
     suspend fun getUserRole(uid: String): UserRole = runCatching {
         val snapshot = firestore.collection("users").document(uid).get().await()
         snapshot.toObject(User::class.java)?.role ?: UserRole.STUDENT

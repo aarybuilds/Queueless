@@ -17,6 +17,7 @@ import androidx.navigation.navArgument
 import com.iiitl.canteen.AppContainer
 import com.iiitl.canteen.data.model.UserRole
 import com.iiitl.canteen.data.repository.CartItem
+import com.iiitl.canteen.ui.auth.EmailVerificationScreen
 import com.iiitl.canteen.ui.auth.LoginScreen
 import com.iiitl.canteen.ui.auth.LoginViewModel
 import com.iiitl.canteen.ui.cafe.CafeOrderQueueScreen
@@ -38,6 +39,7 @@ import kotlinx.coroutines.launch
 
 object Routes {
     const val LOGIN = "login"
+    const val EMAIL_VERIFICATION = "email_verification"
     const val CAFETERIA_SELECTION = "cafeteria_selection"
     const val MENU = "menu/{cafeteriaId}"
     const val CART = "cart/{cafeteriaId}"
@@ -45,6 +47,8 @@ object Routes {
     const val ORDER_HISTORY = "order_history"
     const val CAFE_QUEUE = "cafe_queue/{cafeteriaId}"
     const val PROFILE = "profile"
+
+    val orderHistory = ORDER_HISTORY
 
     fun menu(cafeteriaId: String) = "menu/$cafeteriaId"
     fun cart(cafeteriaId: String) = "cart/$cafeteriaId"
@@ -66,8 +70,15 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
             true -> {
                 val currentRoute = navController.currentBackStackEntry?.destination?.route
                 if (currentRoute == Routes.LOGIN || currentRoute == null) {
-                    navController.navigate(Routes.CAFETERIA_SELECTION) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    val verified = appContainer.authRepository.isEmailVerified()
+                    if (verified) {
+                        navController.navigate(Routes.CAFETERIA_SELECTION) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Routes.EMAIL_VERIFICATION) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
                     }
                 }
             }
@@ -92,6 +103,27 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
                 factory = appContainer.loginViewModelFactory
             )
             LoginScreen(viewModel = loginViewModel)
+        }
+
+        composable(Routes.EMAIL_VERIFICATION) {
+            val userEmail = appContainer.authRepository.getCurrentUserEmail() ?: ""
+            EmailVerificationScreen(
+                userEmail = userEmail,
+                onVerified = {
+                    navController.navigate(Routes.CAFETERIA_SELECTION) {
+                        popUpTo(Routes.EMAIL_VERIFICATION) { inclusive = true }
+                    }
+                },
+                onResendEmail = suspend {
+                    appContainer.authRepository.sendEmailVerification()
+                },
+                onCheckVerification = suspend {
+                    appContainer.authRepository.isEmailVerified()
+                },
+                onSignOut = {
+                    appContainer.authRepository.signOut()
+                }
+            )
         }
 
         composable(Routes.CAFETERIA_SELECTION) {
@@ -226,10 +258,14 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
                 onBack = {
                     navController.popBackStack()
                 },
-                onConfirmReducedOrder = { /* Status updates handled via staff flow / repo */ },
-                onCancelOrder = { /* Status updates handled via repo */ },
+                onConfirmReducedOrder = {
+                    orderStatusViewModel.confirmReducedOrder()
+                },
+                onCancelOrder = {
+                    orderStatusViewModel.cancelOrder()
+                },
                 onViewHistory = {
-                    navController.navigate(Routes.ORDER_HISTORY)
+                    navController.navigate(Routes.orderHistory)
                 }
             )
         }

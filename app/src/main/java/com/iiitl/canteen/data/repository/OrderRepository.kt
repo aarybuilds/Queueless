@@ -56,4 +56,7 @@ class OrderRepository(private val orderDataSource: OrderDataSource) {
 
     fun observeStudentOrders(studentUid: String): Flow<List<Order>> =
         orderDataSource.observeStudentOrders(studentUid)
+
+    suspend fun updateOrderStatus(orderId: String, newStatus: OrderStatus): Result<Unit> =
+        orderDataSource.updateOrderStatus(orderId, newStatus)
 }

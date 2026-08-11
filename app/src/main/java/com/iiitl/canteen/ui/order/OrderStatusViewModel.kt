@@ -3,6 +3,7 @@ package com.iiitl.canteen.ui.order
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.iiitl.canteen.data.model.Order
+import com.iiitl.canteen.data.model.OrderStatus
 import com.iiitl.canteen.data.repository.OrderRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,6 +45,18 @@ class OrderStatusViewModel(
                         _uiState.update { it.copy(order = order, isLoading = false, errorMessage = null) }
                     }
                 }
+        }
+    }
+
+    fun confirmReducedOrder(id: String = orderId) {
+        viewModelScope.launch {
+            orderRepository.updateOrderStatus(id, OrderStatus.ACCEPTED)
+        }
+    }
+
+    fun cancelOrder(id: String = orderId) {
+        viewModelScope.launch {
+            orderRepository.updateOrderStatus(id, OrderStatus.CANCELLED)
         }
     }
 }

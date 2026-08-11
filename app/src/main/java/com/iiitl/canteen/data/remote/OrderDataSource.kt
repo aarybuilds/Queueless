@@ -3,6 +3,7 @@ package com.iiitl.canteen.data.remote
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.iiitl.canteen.data.model.Order
+import com.iiitl.canteen.data.model.OrderStatus
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -17,6 +18,12 @@ class OrderDataSource(private val firestore: FirebaseFirestore) {
         val orderWithId = order.copy(id = docRef.id)
         docRef.set(orderWithId).await()
         docRef.id
+    }
+
+    suspend fun updateOrderStatus(orderId: String, newStatus: OrderStatus): Result<Unit> = runCatching {
+        firestore.collection("orders").document(orderId)
+            .update("status", newStatus.name)
+            .await()
     }
 
     fun observeOrder(orderId: String): Flow<Order?> = callbackFlow {

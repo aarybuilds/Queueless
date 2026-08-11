@@ -11,7 +11,10 @@ class AuthDataSource(private val auth: FirebaseAuth) {
     suspend fun signUp(email: String, password: String): Result<String> =
         runCatching {
             val result = auth.createUserWithEmailAndPassword(email, password).await()
-            result.user?.uid ?: error("Firebase returned no UID after sign-up")
+            val uid = result.user?.uid ?: error("Firebase returned no UID after sign-up")
+            // Verification email send is attempted but swallowed if it fails so account creation succeeds.
+            runCatching { auth.currentUser?.sendEmailVerification()?.await() }
+            uid
         }
 
     suspend fun signIn(email: String, password: String): Result<String> =
@@ -25,6 +28,20 @@ class AuthDataSource(private val auth: FirebaseAuth) {
     }
 
     fun getCurrentUserId(): String? = auth.currentUser?.uid
+
+    fun getCurrentUserEmail(): String? = auth.currentUser?.email
+
+    fun isEmailVerified(): Boolean = auth.currentUser?.isEmailVerified == true
+
+    // Reload fetches fresh token claims from Firebase Auth server, updating local cache.
+    suspend fun reloadUser() {
+        auth.currentUser?.reload()?.await()
+    }
+
+    suspend fun sendEmailVerification(): Result<Unit> = runCatching {
+        auth.currentUser?.sendEmailVerification()?.await()
+        Unit
+    }
 
     fun observeAuthState() = auth.currentUser
 }
