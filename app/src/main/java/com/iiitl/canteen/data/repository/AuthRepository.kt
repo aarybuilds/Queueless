@@ -54,6 +54,15 @@ class AuthRepository(
 
     fun getCurrentUserId(): String? = authDataSource.getCurrentUserId()
 
+    suspend fun getUserRole(uid: String): UserRole = runCatching {
+        val snapshot = firestore.collection("users").document(uid).get().await()
+        snapshot.toObject(User::class.java)?.role ?: UserRole.STUDENT
+    }.getOrDefault(UserRole.STUDENT)
+
+    suspend fun getUserProfile(uid: String): User? = runCatching {
+        firestore.collection("users").document(uid).get().await().toObject(User::class.java)
+    }.getOrNull()
+
     // callbackFlow bridges Firebase's listener-based auth state callbacks into
     // a Kotlin Flow. awaitClose ensures the listener is removed when the Flow
     // collector is cancelled, preventing a memory leak.

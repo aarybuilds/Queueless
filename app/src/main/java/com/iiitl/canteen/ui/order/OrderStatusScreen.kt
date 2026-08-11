@@ -12,10 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,7 +60,8 @@ fun OrderStatusScreen(
     uiState: OrderStatusUiState,
     onBack: () -> Unit,
     onConfirmReducedOrder: () -> Unit,
-    onCancelOrder: () -> Unit
+    onCancelOrder: () -> Unit,
+    onViewHistory: () -> Unit = {}
 ) {
     when {
         uiState.isLoading -> {
@@ -81,7 +86,8 @@ fun OrderStatusScreen(
                 order = uiState.order,
                 onBack = onBack,
                 onConfirmReducedOrder = onConfirmReducedOrder,
-                onCancelOrder = onCancelOrder
+                onCancelOrder = onCancelOrder,
+                onViewHistory = onViewHistory
             )
         }
     }
@@ -92,7 +98,8 @@ private fun OrderContent(
     order: Order,
     onBack: () -> Unit,
     onConfirmReducedOrder: () -> Unit,
-    onCancelOrder: () -> Unit
+    onCancelOrder: () -> Unit,
+    onViewHistory: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -101,17 +108,30 @@ private fun OrderContent(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            // Large order number — the human-readable reference for the counter.
-            Text(
-                text = "Order #${order.orderNumber}",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = order.status.toDisplayString(),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Order #${order.orderNumber}",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = order.status.toDisplayString(),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = onViewHistory) {
+                    Icon(
+                        imageVector = Icons.Default.History,
+                        contentDescription = "Order History"
+                    )
+                }
+            }
         }
 
         item { Spacer(modifier = Modifier.height(4.dp)) }

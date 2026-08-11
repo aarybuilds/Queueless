@@ -15,6 +15,8 @@ import com.iiitl.canteen.data.repository.OrderRepository
 import com.iiitl.canteen.ui.auth.LoginViewModel
 import com.iiitl.canteen.ui.cafe.CafeOrderQueueViewModel
 import com.iiitl.canteen.ui.menu.MenuViewModel
+import com.iiitl.canteen.ui.order.OrderHistoryViewModel
+import com.iiitl.canteen.ui.order.OrderStatusViewModel
 import com.iiitl.canteen.ui.order.PlaceOrderViewModel
 
 // Manual DI: we hold singleton Firebase instances here and build the
@@ -87,5 +89,19 @@ class AppContainer {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                 CafeOrderQueueViewModel(cafeOrderRepository, authRepository, cafeteriaId) as T
+        }
+
+    fun orderStatusViewModelFactory(orderId: String): ViewModelProvider.Factory =
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                OrderStatusViewModel(orderRepository, orderId) as T
+        }
+
+    fun orderHistoryViewModelFactory(studentUid: String): ViewModelProvider.Factory =
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                OrderHistoryViewModel(orderRepository, studentUid) as T
         }
 }
