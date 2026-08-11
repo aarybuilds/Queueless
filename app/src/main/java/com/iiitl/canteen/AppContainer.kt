@@ -5,12 +5,15 @@ import androidx.lifecycle.ViewModelProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.iiitl.canteen.data.remote.AuthDataSource
+import com.iiitl.canteen.data.remote.CafeOrderDataSource
 import com.iiitl.canteen.data.remote.MenuDataSource
 import com.iiitl.canteen.data.remote.OrderDataSource
 import com.iiitl.canteen.data.repository.AuthRepository
+import com.iiitl.canteen.data.repository.CafeOrderRepository
 import com.iiitl.canteen.data.repository.MenuRepository
 import com.iiitl.canteen.data.repository.OrderRepository
 import com.iiitl.canteen.ui.auth.LoginViewModel
+import com.iiitl.canteen.ui.cafe.CafeOrderQueueViewModel
 import com.iiitl.canteen.ui.menu.MenuViewModel
 import com.iiitl.canteen.ui.order.PlaceOrderViewModel
 
@@ -69,5 +72,20 @@ class AppContainer {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
                 PlaceOrderViewModel(orderRepository, authRepository) as T
+        }
+
+    private val cafeOrderDataSource: CafeOrderDataSource by lazy {
+        CafeOrderDataSource(firestore)
+    }
+
+    val cafeOrderRepository: CafeOrderRepository by lazy {
+        CafeOrderRepository(cafeOrderDataSource)
+    }
+
+    fun cafeQueueViewModelFactory(cafeteriaId: String): ViewModelProvider.Factory =
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                CafeOrderQueueViewModel(cafeOrderRepository, authRepository, cafeteriaId) as T
         }
 }
