@@ -34,7 +34,7 @@ class OrderRepository(private val orderDataSource: OrderDataSource) {
 
         // 4-digit number gives staff a short, speakable reference without
         // exposing the full Firestore document ID at the counter.
-        val orderNumber = (1000..9999).random()
+        val orderNumber = (System.currentTimeMillis() % 9000 + 1000).toInt()
 
         val order = Order(
             cafeteriaId = cafeteriaId,
