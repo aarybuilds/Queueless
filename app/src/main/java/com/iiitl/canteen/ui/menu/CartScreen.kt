@@ -95,9 +95,19 @@ fun CartScreen(
                         )
                     }
 
+                    if (uiState.errorMessage != null) {
+                        Text(
+                            text = uiState.errorMessage,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = androidx.compose.ui.graphics.Color(0xFFFFCDD2),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     Button(
                         onClick = onPlaceOrder,
-                        enabled = uiState.items.isNotEmpty(),
+                        enabled = uiState.items.isNotEmpty() && uiState.errorMessage == null,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondary,
                             contentColor = MaterialTheme.colorScheme.onSecondary
@@ -123,15 +133,6 @@ fun CartScreen(
                 .fillMaxSize()
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                if (uiState.errorMessage != null) {
-                    Text(
-                        text = uiState.errorMessage,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-
                 if (uiState.items.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxSize(),

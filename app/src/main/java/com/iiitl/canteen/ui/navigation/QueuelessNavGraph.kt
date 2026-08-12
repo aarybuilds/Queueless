@@ -14,6 +14,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -127,7 +130,11 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
 
     NavHost(
         navController = navController,
-        startDestination = Routes.LOGIN
+        startDestination = Routes.LOGIN,
+        enterTransition = { androidx.compose.animation.EnterTransition.None },
+        exitTransition = { androidx.compose.animation.ExitTransition.None },
+        popEnterTransition = { androidx.compose.animation.EnterTransition.None },
+        popExitTransition = { androidx.compose.animation.ExitTransition.None }
     ) {
         composable(Routes.LOGIN) {
             val loginViewModel: LoginViewModel = viewModel(
@@ -276,8 +283,10 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
                 }
             }
 
+            val effectiveErrorMessage = placeOrderUiState.errorMessage ?: cartUiState.errorMessage
+
             CartScreen(
-                uiState = cartUiState,
+                uiState = cartUiState.copy(errorMessage = effectiveErrorMessage),
                 studentInfo = studentInfo,
                 onAddItem = { cartViewModel.addItem(it) },
                 onRemoveItem = { cartViewModel.removeItem(it) },
