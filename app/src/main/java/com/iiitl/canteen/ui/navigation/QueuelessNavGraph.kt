@@ -14,6 +14,18 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.iiitl.canteen.AppContainer
 import com.iiitl.canteen.data.model.UserRole
 import com.iiitl.canteen.data.repository.CartItem
@@ -42,6 +54,7 @@ object Routes {
     const val LOGIN = "login"
     const val EMAIL_VERIFICATION = "email_verification"
     const val CAFETERIA_SELECTION = "cafeteria_selection"
+    const val NO_CAFETERIA_ASSIGNED = "no_cafeteria_assigned"
     const val MENU = "menu/{cafeteriaId}"
     const val CART = "cart/{cafeteriaId}"
     const val ORDER_STATUS = "order_status/{orderId}"
@@ -76,8 +89,15 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
                     val role = if (uid != null) appContainer.authRepository.getUserRole(uid) else UserRole.STUDENT
 
                     if (role == UserRole.CAFE_STAFF) {
-                        navController.navigate(Routes.CAFETERIA_SELECTION) {
-                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        val assignedCafeteriaId = if (uid != null) appContainer.authRepository.getAssignedCafeteriaId(uid) else null
+                        if (!assignedCafeteriaId.isNullOrEmpty()) {
+                            navController.navigate(Routes.cafeQueue(assignedCafeteriaId)) {
+                                popUpTo(Routes.LOGIN) { inclusive = true }
+                            }
+                        } else {
+                            navController.navigate(Routes.NO_CAFETERIA_ASSIGNED) {
+                                popUpTo(Routes.LOGIN) { inclusive = true }
+                            }
                         }
                     } else {
                         val verified = appContainer.authRepository.isEmailVerified()
@@ -140,24 +160,40 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
         composable(Routes.CAFETERIA_SELECTION) {
             CafeteriaSelectionScreen(
                 onCafeteriaSelected = { cafeteriaId ->
-                    scope.launch {
-                        val uid = appContainer.authRepository.getCurrentUserId()
-                        if (uid != null) {
-                            val role = appContainer.authRepository.getUserRole(uid)
-                            if (role == UserRole.STUDENT) {
-                                navController.navigate(Routes.menu(cafeteriaId))
-                            } else {
-                                navController.navigate(Routes.cafeQueue(cafeteriaId))
-                            }
-                        } else {
-                            navController.navigate(Routes.menu(cafeteriaId))
-                        }
-                    }
+                    navController.navigate(Routes.menu(cafeteriaId))
                 },
                 onProfileClick = {
                     navController.navigate(Routes.PROFILE)
                 }
             )
+        }
+
+        composable(Routes.NO_CAFETERIA_ASSIGNED) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "No cafeteria assigned. Contact admin.",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center
+                    )
+                    Button(
+                        onClick = {
+                            appContainer.authRepository.signOut()
+                        }
+                    ) {
+                        Text("Sign Out")
+                    }
+                }
+            }
         }
 
         composable(

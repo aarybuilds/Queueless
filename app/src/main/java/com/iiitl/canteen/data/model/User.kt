@@ -6,5 +6,6 @@ data class User(
     val name: String = "",
     val rollNumber: String = "",
     val role: UserRole = UserRole.STUDENT,
-    val noShowCount: Int = 0
+    val noShowCount: Int = 0,
+    val assignedCafeteriaId: String = ""
 )

@@ -74,6 +74,12 @@ class AuthRepository(
         firestore.collection("users").document(uid).get().await().toObject(User::class.java)
     }.getOrNull()
 
+    // Reads assigned cafeteria ID for staff accounts to restrict queue access.
+    suspend fun getAssignedCafeteriaId(uid: String): String? = runCatching {
+        val snapshot = firestore.collection("users").document(uid).get().await()
+        snapshot.getString("assignedCafeteriaId")?.ifEmpty { null }
+    }.getOrNull()
+
     // callbackFlow bridges Firebase's listener-based auth state callbacks into
     // a Kotlin Flow. awaitClose ensures the listener is removed when the Flow
     // collector is cancelled, preventing a memory leak.
