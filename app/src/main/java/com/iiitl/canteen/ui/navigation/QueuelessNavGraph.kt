@@ -367,6 +367,9 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
                 },
                 onClearClaimError = {
                     cafeQueueViewModel.clearClaimError()
+                },
+                onProfileClick = {
+                    navController.navigate(Routes.PROFILE)
                 }
             )
         }
