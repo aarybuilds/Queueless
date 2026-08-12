@@ -44,6 +44,10 @@ class AppContainer {
         MenuRepository(menuDataSource)
     }
 
+    val suggestionDataSource: com.iiitl.canteen.data.remote.SuggestionDataSource by lazy {
+        com.iiitl.canteen.data.remote.SuggestionDataSource(firestore)
+    }
+
     // A factory is required because LoginViewModel takes a constructor argument.
     // Without it, viewModel() would call the zero-arg constructor and crash.
     val loginViewModelFactory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {

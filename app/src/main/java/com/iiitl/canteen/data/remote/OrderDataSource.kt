@@ -49,4 +49,20 @@ class OrderDataSource(private val firestore: FirebaseFirestore) {
             }
         awaitClose { registration.remove() }
     }
+
+    // Queries active non-terminal orders for a student to enforce queue capacity limits.
+    suspend fun checkActiveOrderCount(studentUid: String): Int = runCatching {
+        val activeStatuses = listOf(
+            OrderStatus.PLACED.name,
+            OrderStatus.AWAITING_CONFIRMATION.name,
+            OrderStatus.ACCEPTED.name,
+            OrderStatus.PREPARING.name
+        )
+        val snapshot = firestore.collection("orders")
+            .whereEqualTo("studentUid", studentUid)
+            .whereIn("status", activeStatuses)
+            .get()
+            .await()
+        snapshot.size()
+    }.getOrDefault(0)
 }

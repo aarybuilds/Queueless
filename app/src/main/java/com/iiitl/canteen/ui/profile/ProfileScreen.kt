@@ -43,12 +43,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.material.icons.filled.Feedback
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     uiState: ProfileUiState,
     onLogout: () -> Unit,
     onViewHistory: () -> Unit,
+    onSuggestionClick: () -> Unit = {},
     onBack: () -> Unit
 ) {
     Scaffold(
@@ -60,6 +63,15 @@ fun ProfileScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onSuggestionClick) {
+                        Icon(
+                            imageVector = Icons.Default.Feedback,
+                            contentDescription = "Suggestion Box",
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }

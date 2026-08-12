@@ -35,6 +35,7 @@ import com.iiitl.canteen.ui.order.OrderStatusViewModel
 import com.iiitl.canteen.ui.order.PlaceOrderViewModel
 import com.iiitl.canteen.ui.profile.ProfileScreen
 import com.iiitl.canteen.ui.profile.ProfileViewModel
+import com.iiitl.canteen.ui.suggestion.SuggestionScreen
 import kotlinx.coroutines.launch
 
 object Routes {
@@ -47,6 +48,7 @@ object Routes {
     const val ORDER_HISTORY = "order_history"
     const val CAFE_QUEUE = "cafe_queue/{cafeteriaId}"
     const val PROFILE = "profile"
+    const val SUGGESTION = "suggestion"
 
     val orderHistory = ORDER_HISTORY
 
@@ -349,6 +351,29 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
                 },
                 onViewHistory = {
                     navController.navigate(Routes.ORDER_HISTORY)
+                },
+                onSuggestionClick = {
+                    navController.navigate(Routes.SUGGESTION)
+                },
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Routes.SUGGESTION) {
+            val uid = appContainer.authRepository.getCurrentUserId() ?: ""
+            var studentName by remember { mutableStateOf("") }
+            LaunchedEffect(uid) {
+                if (uid.isNotEmpty()) {
+                    studentName = appContainer.authRepository.getUserProfile(uid)?.name ?: ""
+                }
+            }
+            SuggestionScreen(
+                studentUid = uid,
+                studentName = studentName,
+                onSubmitSuggestion = { sUid, sName, msg ->
+                    appContainer.suggestionDataSource.submitSuggestion(sUid, sName, msg)
                 },
                 onBack = {
                     navController.popBackStack()

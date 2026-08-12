@@ -20,6 +20,14 @@ class OrderRepository(private val orderDataSource: OrderDataSource) {
         studentRollNumber: String,
         cartItems: List<CartItem>
     ): Result<String> {
+        // Enforce max 3 active orders limit before creating a new order document.
+        val activeOrderCount = orderDataSource.checkActiveOrderCount(studentUid)
+        if (activeOrderCount >= 3) {
+            return Result.failure(
+                Exception("You already have 3 active orders. Please wait for them to be completed before placing a new one.")
+            )
+        }
+
         val orderItems = cartItems.map { (item, qty) ->
             OrderItem(
                 itemId = item.id,
