@@ -32,6 +32,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.iiitl.canteen.R
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CafeteriaSelectionScreen(
@@ -42,12 +46,20 @@ fun CafeteriaSelectionScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "🍽 Queueless",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                            contentDescription = "Queueless Logo",
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.size(6.dp))
+                        Text(
+                            text = "Queueless",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 },
                 actions = {
                     IconButton(onClick = onProfileClick) {
