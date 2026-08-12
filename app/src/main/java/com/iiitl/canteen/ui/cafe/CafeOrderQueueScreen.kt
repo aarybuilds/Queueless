@@ -1,6 +1,7 @@
 package com.iiitl.canteen.ui.cafe
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
@@ -23,13 +25,17 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,14 +47,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.iiitl.canteen.data.model.Order
 import com.iiitl.canteen.data.model.OrderItem
 import com.iiitl.canteen.data.model.OrderStatus
 import kotlinx.coroutines.delay
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +66,7 @@ fun CafeOrderQueueScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Order Queue", fontWeight = FontWeight.Bold) },
+                title = { Text("Order Queue", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 actions = {
                     IconButton(onClick = onProfileClick) {
                         Icon(
@@ -72,7 +75,10 @@ fun CafeOrderQueueScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { innerPadding ->
@@ -80,91 +86,95 @@ fun CafeOrderQueueScreen(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
-        when {
-            uiState.isLoading -> {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
 
-            uiState.orders.isEmpty() -> {
-                Text(
-                    text = "No active orders in queue",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
+                uiState.orders.isEmpty() -> {
+                    Text(
+                        text = "No active orders in queue",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
 
-            else -> {
-                val readyOrders = uiState.orders.filter { it.status == OrderStatus.READY }
-                val activeOrders = uiState.orders.filter { it.status != OrderStatus.READY }
+                else -> {
+                    val readyOrders = uiState.orders.filter { it.status == OrderStatus.READY }
+                    val activeOrders = uiState.orders.filter { it.status != OrderStatus.READY }
 
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(16.dp)
-                ) {
-                    if (activeOrders.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = "Active Queue (${activeOrders.size})",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(bottom = 4.dp)
-                            )
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(16.dp)
+                    ) {
+                        if (activeOrders.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Active Queue (${activeOrders.size})",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(bottom = 4.dp)
+                                )
+                            }
+                            items(activeOrders, key = { it.id }) { order ->
+                                OrderCard(
+                                    order = order,
+                                    isReady = false,
+                                    onClaimOrder = onClaimOrder,
+                                    onUpdateStatus = onUpdateStatus,
+                                    onMarkUnavailable = onMarkUnavailable
+                                )
+                            }
                         }
-                        items(activeOrders, key = { it.id }) { order ->
-                            OrderCard(
-                                order = order,
-                                isReady = false,
-                                onClaimOrder = onClaimOrder,
-                                onUpdateStatus = onUpdateStatus,
-                                onMarkUnavailable = onMarkUnavailable
-                            )
-                        }
-                    }
 
-                    if (readyOrders.isNotEmpty()) {
-                        item { Spacer(modifier = Modifier.height(12.dp)) }
-                        item {
-                            Text(
-                                text = "Ready for Collection (${readyOrders.size})",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1B5E20),
-                                modifier = Modifier.padding(bottom = 4.dp)
-                            )
-                        }
-                        items(readyOrders, key = { it.id }) { order ->
-                            OrderCard(
-                                order = order,
-                                isReady = true,
-                                onClaimOrder = onClaimOrder,
-                                onUpdateStatus = onUpdateStatus,
-                                onMarkUnavailable = onMarkUnavailable
-                            )
+                        if (readyOrders.isNotEmpty()) {
+                            item { Spacer(modifier = Modifier.height(12.dp)) }
+                            item {
+                                Text(
+                                    text = "Ready for Collection (${readyOrders.size})",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF4CAF50),
+                                    modifier = Modifier.padding(bottom = 4.dp)
+                                )
+                            }
+                            items(readyOrders, key = { it.id }) { order ->
+                                OrderCard(
+                                    order = order,
+                                    isReady = true,
+                                    onClaimOrder = onClaimOrder,
+                                    onUpdateStatus = onUpdateStatus,
+                                    onMarkUnavailable = onMarkUnavailable
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
 
-        if (uiState.claimError != null) {
-            LaunchedEffect(uiState.claimError) {
-                delay(3000)
-                onClearClaimError()
-            }
-            Snackbar(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-            ) {
-                Text(uiState.claimError)
+            if (uiState.claimError != null) {
+                LaunchedEffect(uiState.claimError) {
+                    delay(3000)
+                    onClearClaimError()
+                }
+                Snackbar(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                ) {
+                    Text(uiState.claimError)
+                }
             }
         }
     }
-}
 }
 
 @Composable
@@ -176,15 +186,14 @@ private fun OrderCard(
     onMarkUnavailable: (String, Map<String, Int>) -> Unit
 ) {
     var showUnavailableChooser by remember(order.id) { mutableStateOf(false) }
-
-    val border = if (isReady) BorderStroke(2.dp, Color(0xFF1B5E20)) else null
+    val border = if (isReady) BorderStroke(2.dp, Color(0xFF4CAF50)) else null
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = border,
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -194,21 +203,21 @@ private fun OrderCard(
             ) {
                 Text(
                     text = "#${order.orderNumber}",
-                    style = MaterialTheme.typography.headlineMedium,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = order.status.name,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isReady) Color(0xFF1B5E20) else MaterialTheme.colorScheme.primary
+                    color = if (isReady) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary
                 )
             }
 
             Text(
                 text = "${order.studentName} (${order.studentRollNumber})",
-                style = MaterialTheme.typography.titleMedium,
+                fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
@@ -242,11 +251,13 @@ private fun OrderCard(
                             Button(
                                 onClick = { onClaimOrder(order.id) },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF2E7D32),
-                                    contentColor = Color.White
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
                                 ),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.weight(1f)
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
                             ) {
                                 Text("Accept", fontWeight = FontWeight.Bold)
                             }
@@ -256,10 +267,12 @@ private fun OrderCard(
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     contentColor = MaterialTheme.colorScheme.error
                                 ),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.weight(1f)
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
                             ) {
-                                Text("Can't prepare")
+                                Text("Can't prepare", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -280,8 +293,14 @@ private fun OrderCard(
                         "Start preparing" else "Mark Ready"
                     Button(
                         onClick = { onUpdateStatus(order.id, nextStatus) },
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
                     ) {
                         Text(label, fontWeight = FontWeight.Bold)
                     }
@@ -292,11 +311,13 @@ private fun OrderCard(
                         Button(
                             onClick = { onUpdateStatus(order.id, OrderStatus.COLLECTED) },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF2E7D32),
+                                containerColor = Color(0xFF4CAF50),
                                 contentColor = Color.White
                             ),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f)
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
                         ) {
                             Text("Collected", fontWeight = FontWeight.Bold)
                         }
@@ -306,10 +327,12 @@ private fun OrderCard(
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = MaterialTheme.colorScheme.error
                             ),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f)
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
                         ) {
-                            Text("Not collected")
+                            Text("Not collected", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -322,11 +345,11 @@ private fun OrderCard(
 
 @Composable
 private fun OrderItemLine(item: OrderItem) {
-    val alpha = if (item.isAvailable) 1f else 0.4f
+    val alpha = if (item.isAvailable) 1f else 0.5f
     val color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
     Text(
         text = "• ${item.name} × ${item.quantity}" + if (!item.isAvailable) " (unavailable)" else "",
-        style = MaterialTheme.typography.bodyMedium,
+        fontSize = 14.sp,
         fontWeight = FontWeight.Medium,
         color = color
     )
@@ -355,7 +378,6 @@ private fun UnavailableChooser(
             modifier = Modifier.padding(bottom = 4.dp)
         )
 
-        // Select All / Mark All Unavailable Checkbox
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -380,7 +402,6 @@ private fun UnavailableChooser(
             )
         }
 
-        // Per-item quantity selector
         items.forEach { item ->
             val currentQty = availableQuantities[item.itemId] ?: item.quantity
             Row(
@@ -416,7 +437,7 @@ private fun UnavailableChooser(
                         Icon(
                             imageVector = Icons.Default.Remove,
                             contentDescription = "Reduce available quantity",
-                            tint = if (currentQty > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                            tint = if (currentQty > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                         )
                     }
 
@@ -439,7 +460,7 @@ private fun UnavailableChooser(
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Increase available quantity",
-                            tint = if (currentQty < item.quantity) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                            tint = if (currentQty < item.quantity) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                         )
                     }
                 }
@@ -456,8 +477,10 @@ private fun UnavailableChooser(
                         containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError
                     ),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.weight(1f)
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
                 ) {
                     Text("Reject order", fontWeight = FontWeight.Bold)
                 }
@@ -466,10 +489,13 @@ private fun UnavailableChooser(
                     onClick = { onMarkUnavailable(availableQuantities) },
                     enabled = isPartial,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.weight(1f)
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
                 ) {
                     Text("Notify student", fontWeight = FontWeight.Bold)
                 }
@@ -477,9 +503,11 @@ private fun UnavailableChooser(
 
             TextButton(
                 onClick = onCancel,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp)
             ) {
-                Text("Cancel")
+                Text("Cancel", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

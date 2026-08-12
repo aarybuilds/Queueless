@@ -1,6 +1,7 @@
 package com.iiitl.canteen.ui.order
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,16 +19,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.iiitl.canteen.data.model.Order
 import com.iiitl.canteen.data.model.OrderItem
 import com.iiitl.canteen.data.model.OrderStatus
@@ -61,15 +67,15 @@ private fun OrderStatus.toStepLabel(): String = when (this) {
 }
 
 private fun OrderStatus.badgeColor(): Color = when (this) {
-    OrderStatus.PLACED                -> Color(0xFF757575)
-    OrderStatus.ACCEPTED              -> Color(0xFF1976D2)
-    OrderStatus.PREPARING             -> Color(0xFFF57C00)
-    OrderStatus.READY                 -> Color(0xFF388E3C)
-    OrderStatus.AWAITING_CONFIRMATION -> Color(0xFFE65100)
-    OrderStatus.COLLECTED             -> Color(0xFF2E7D32)
+    OrderStatus.PLACED,
+    OrderStatus.AWAITING_CONFIRMATION -> Color(0xFFFFB300)
+    OrderStatus.ACCEPTED,
+    OrderStatus.PREPARING             -> Color(0xFF2E7D32)
+    OrderStatus.READY,
+    OrderStatus.COLLECTED             -> Color(0xFF4CAF50)
     OrderStatus.CANCELLED,
     OrderStatus.REJECTED,
-    OrderStatus.EXPIRED               -> Color(0xFFD32F2F)
+    OrderStatus.EXPIRED               -> Color(0xFFE53935)
 }
 
 private val progressSteps = listOf(
@@ -91,15 +97,19 @@ fun OrderStatusScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Order Tracker", fontWeight = FontWeight.Bold) },
+                title = { Text("Order Tracker", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 actions = {
                     IconButton(onClick = onViewHistory) {
                         Icon(
                             imageVector = Icons.Default.History,
-                            contentDescription = "Order History"
+                            contentDescription = "Order History",
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { innerPadding ->
@@ -107,11 +117,12 @@ fun OrderStatusScreen(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
             when {
                 uiState.isLoading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 }
 
@@ -159,45 +170,62 @@ private fun OrderContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Order #${order.orderNumber}",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = order.status.toDisplayString(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (order.status == OrderStatus.REJECTED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Surface(
-                    color = order.status.badgeColor(),
-                    shape = RoundedCornerShape(16.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = order.status.name,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Order #${order.orderNumber}",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = order.status.toDisplayString(),
+                            fontSize = 13.sp,
+                            color = if (order.status == OrderStatus.REJECTED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Surface(
+                        color = order.status.badgeColor(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = order.status.name,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
                 }
             }
         }
 
         // Hide progress bar for terminal states (REJECTED, CANCELLED, EXPIRED)
         if (!isTerminal) {
-            item { StatusProgressRow(currentStatus = order.status) }
-            item { HorizontalDivider() }
+            item {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(modifier = Modifier.padding(16.dp)) {
+                        StatusProgressRow(currentStatus = order.status)
+                    }
+                }
+            }
         }
 
         item { StatusBanner(order = order) }
@@ -230,58 +258,71 @@ private fun OrderContent(
                     Button(
                         onClick = onConfirmReducedOrder,
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Confirm reduced order")
-                    }
-                    Button(
-                        onClick = onCancelOrder,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Text("Confirm", fontWeight = FontWeight.Bold)
+                    }
+                    OutlinedButton(
+                        onClick = onCancelOrder,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
                         ),
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
                     ) {
-                        Text("Cancel order")
+                        Text("Cancel", fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
 
-        item { HorizontalDivider() }
-
         item {
-            Text(
-                text = "Order Details",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-
-        items(order.items) { orderItem ->
-            OrderItemRow(orderItem = orderItem)
-        }
-
-        item { HorizontalDivider() }
-
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = "Total",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "₹${"%.2f".format(order.totalAmount)}",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Order Details",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    order.items.forEach { orderItem ->
+                        OrderItemRow(orderItem = orderItem)
+                    }
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Total",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "₹${"%.2f".format(order.totalAmount)}",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             }
         }
 
@@ -290,11 +331,15 @@ private fun OrderContent(
             Button(
                 onClick = onBack,
                 shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(48.dp)
             ) {
-                Text("Back")
+                Text("Back to Canteen", fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -310,7 +355,7 @@ private fun StatusProgressRow(currentStatus: OrderStatus) {
         progressSteps.forEachIndexed { index, step ->
             val isPast = progressSteps.indexOf(currentStatus).let { it >= 0 && index <= it }
             val dotColor = if (isPast) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.outlineVariant
+            else MaterialTheme.colorScheme.surfaceVariant
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
@@ -325,7 +370,7 @@ private fun StatusProgressRow(currentStatus: OrderStatus) {
                     text = step.toStepLabel(),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = if (isPast) FontWeight.Bold else FontWeight.Normal,
-                    color = dotColor,
+                    color = if (isPast) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                     overflow = TextOverflow.Visible,
                     maxLines = 1,
                     textAlign = TextAlign.Center
@@ -334,7 +379,7 @@ private fun StatusProgressRow(currentStatus: OrderStatus) {
 
             if (index < progressSteps.lastIndex) {
                 val lineColor = if (progressSteps.indexOf(currentStatus).let { it >= 0 && index < it })
-                    MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                    MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -355,27 +400,29 @@ private fun StatusBanner(order: Order) {
     when (order.status) {
         OrderStatus.READY -> Text(
             text = "Your order is ready! Go collect it.",
-            style = MaterialTheme.typography.titleMedium,
+            fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF388E3C),
+            color = Color(0xFF4CAF50),
             modifier = Modifier.fillMaxWidth()
         )
         OrderStatus.REJECTED -> Text(
             text = "Your order was rejected — items were unavailable at the canteen.",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.error,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFFE53935),
             modifier = Modifier.fillMaxWidth()
         )
         OrderStatus.CANCELLED -> Text(
             text = "This order was cancelled.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFFE53935)
         )
         OrderStatus.EXPIRED -> Text(
             text = "This order expired because it was not collected.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFFE53935)
         )
         else -> { /* no banner for other states */ }
     }
@@ -384,7 +431,7 @@ private fun StatusBanner(order: Order) {
 @Composable
 private fun OrderItemRow(orderItem: OrderItem) {
     val textColor = if (orderItem.isAvailable) MaterialTheme.colorScheme.onSurface
-    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    else MaterialTheme.colorScheme.onSurfaceVariant
     Row(
         modifier = Modifier
             .fillMaxWidth()

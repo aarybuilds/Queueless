@@ -17,9 +17,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
@@ -32,28 +35,28 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-
-import androidx.compose.material.icons.filled.Feedback
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,15 +76,17 @@ fun ProfileScreen(
     var isUpdatingPassword by remember { mutableStateOf(false) }
     var passwordSuccessMsg by remember { mutableStateOf<String?>(null) }
     var passwordErrorMsg by remember { mutableStateOf<String?>(null) }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Profile", fontWeight = FontWeight.Bold) },
+                title = { Text("My Profile", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
@@ -93,7 +98,10 @@ fun ProfileScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { innerPadding ->
@@ -101,9 +109,13 @@ fun ProfileScreen(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
             if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.Center)
+                )
             } else {
                 Column(
                     modifier = Modifier
@@ -118,7 +130,6 @@ fun ProfileScreen(
                     ) {
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Avatar Circle with Initials
                         val initials = uiState.name
                             .split(" ")
                             .mapNotNull { it.firstOrNull()?.uppercase() }
@@ -135,7 +146,7 @@ fun ProfileScreen(
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = initials,
-                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontSize = 32.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
@@ -146,34 +157,33 @@ fun ProfileScreen(
 
                         Text(
                             text = uiState.name.ifEmpty { "User" },
-                            style = MaterialTheme.typography.headlineSmall,
+                            fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Spacer(modifier = Modifier.height(6.dp))
 
-                        // Role Badge
+                        val isStudent = uiState.role.uppercase() == "STUDENT" || uiState.role.isEmpty()
                         AssistChip(
                             onClick = {},
                             label = {
                                 Text(
                                     text = uiState.role.ifEmpty { "STUDENT" },
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.Bold
                                 )
                             },
                             colors = AssistChipDefaults.assistChipColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                labelColor = MaterialTheme.colorScheme.primary
+                                containerColor = if (isStudent) Color(0xFF2E7D32) else Color(0xFFFFB300),
+                                labelColor = Color.White
                             )
                         )
 
                         Spacer(modifier = Modifier.height(28.dp))
 
-                        // Info List Card
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
@@ -184,7 +194,7 @@ fun ProfileScreen(
                                     subtitle = uiState.email
                                 )
 
-                                if (uiState.role == "STUDENT") {
+                                if (isStudent) {
                                     HorizontalDivider(
                                         modifier = Modifier.padding(vertical = 12.dp),
                                         color = MaterialTheme.colorScheme.surfaceVariant
@@ -203,7 +213,7 @@ fun ProfileScreen(
                                             modifier = Modifier.size(24.dp)
                                         )
                                         Spacer(modifier = Modifier.width(16.dp))
-                                        Column {
+                                        Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 text = "Order History",
                                                 style = MaterialTheme.typography.titleMedium,
@@ -216,8 +226,15 @@ fun ProfileScreen(
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                            contentDescription = "Go",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
                                     }
                                 }
+
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 12.dp),
                                     color = MaterialTheme.colorScheme.surfaceVariant
@@ -242,7 +259,7 @@ fun ProfileScreen(
                                         modifier = Modifier.size(24.dp)
                                     )
                                     Spacer(modifier = Modifier.width(16.dp))
-                                    Column {
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = "Change Password",
                                             style = MaterialTheme.typography.titleMedium,
@@ -255,20 +272,27 @@ fun ProfileScreen(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                        contentDescription = "Go",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
                                 }
                             }
                         }
                     }
 
-                    Button(
+                    OutlinedButton(
                         onClick = onLogout,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
                         ),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp)
+                            .height(48.dp)
                     ) {
                         Text(
                             text = "Sign Out",
@@ -285,9 +309,19 @@ fun ProfileScreen(
                 onDismissRequest = {
                     if (!isUpdatingPassword) showChangePasswordDialog = false
                 },
-                title = { Text("Change Password", fontWeight = FontWeight.Bold) },
+                title = { Text("Change Password", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                containerColor = MaterialTheme.colorScheme.surface,
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        val textFieldColors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                        )
+
                         OutlinedTextField(
                             value = newPassword,
                             onValueChange = {
@@ -296,6 +330,7 @@ fun ProfileScreen(
                             },
                             label = { Text("New Password") },
                             singleLine = true,
+                            colors = textFieldColors,
                             visualTransformation = PasswordVisualTransformation(),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth()
@@ -309,6 +344,7 @@ fun ProfileScreen(
                             },
                             label = { Text("Confirm Password") },
                             singleLine = true,
+                            colors = textFieldColors,
                             visualTransformation = PasswordVisualTransformation(),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth()
@@ -355,9 +391,14 @@ fun ProfileScreen(
                                 )
                             }
                         },
-                        enabled = isMatching && !isUpdatingPassword
+                        enabled = isMatching && !isUpdatingPassword,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Update")
+                        Text("Update", fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
@@ -365,7 +406,7 @@ fun ProfileScreen(
                         onClick = { showChangePasswordDialog = false },
                         enabled = !isUpdatingPassword
                     ) {
-                        Text("Cancel")
+                        Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             )
@@ -393,7 +434,7 @@ private fun ProfileInfoItem(
         Column {
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelSmall,
+                fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(

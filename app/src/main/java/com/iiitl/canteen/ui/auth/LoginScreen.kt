@@ -1,5 +1,6 @@
 package com.iiitl.canteen.ui.auth
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,13 +14,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,6 +34,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun LoginScreen(viewModel: LoginViewModel) {
@@ -39,6 +43,7 @@ fun LoginScreen(viewModel: LoginViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -46,9 +51,9 @@ fun LoginScreen(viewModel: LoginViewModel) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -60,9 +65,9 @@ fun LoginScreen(viewModel: LoginViewModel) {
             ) {
                 Text(
                     text = "🍽 Queueless",
-                    style = MaterialTheme.typography.displaySmall,
+                    fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
 
@@ -78,8 +83,17 @@ fun LoginScreen(viewModel: LoginViewModel) {
                 Text(
                     text = if (state.isLoginMode) "Sign In" else "Create Account",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
+                )
+
+                val textFieldColors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 )
 
                 if (!state.isLoginMode) {
@@ -89,6 +103,7 @@ fun LoginScreen(viewModel: LoginViewModel) {
                         label = { Text("Full Name") },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
+                        colors = textFieldColors,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -99,6 +114,7 @@ fun LoginScreen(viewModel: LoginViewModel) {
                         label = { Text("Roll Number") },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
+                        colors = textFieldColors,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -110,6 +126,7 @@ fun LoginScreen(viewModel: LoginViewModel) {
                     label = { Text("Email (@iiitl.ac.in)") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
+                    colors = textFieldColors,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Next
@@ -123,6 +140,7 @@ fun LoginScreen(viewModel: LoginViewModel) {
                     label = { Text("Password") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
+                    colors = textFieldColors,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password,
@@ -143,27 +161,38 @@ fun LoginScreen(viewModel: LoginViewModel) {
                 Spacer(modifier = Modifier.height(4.dp))
 
                 if (state.isLoading) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 } else {
                     Button(
                         onClick = viewModel::submit,
                         shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp)
+                            .height(48.dp)
                     ) {
                         Text(
                             text = if (state.isLoginMode) "Sign In" else "Create Account",
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
 
-                TextButton(onClick = viewModel::toggleMode) {
+                OutlinedButton(
+                    onClick = viewModel::toggleMode,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
                     Text(
-                        text = if (state.isLoginMode) "Don't have an account? Sign up"
-                        else "Already have an account? Sign in",
-                        color = MaterialTheme.colorScheme.primary
+                        text = if (state.isLoginMode) "Switch to Signup" else "Switch to Sign in",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
