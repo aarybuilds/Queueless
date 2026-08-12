@@ -403,6 +403,9 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
                 onSuggestionClick = {
                     navController.navigate(Routes.SUGGESTION)
                 },
+                onChangePassword = { newPassword ->
+                    appContainer.authRepository.changePassword(newPassword)
+                },
                 onBack = {
                     navController.popBackStack()
                 }

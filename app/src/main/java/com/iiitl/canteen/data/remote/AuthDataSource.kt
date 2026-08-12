@@ -43,5 +43,11 @@ class AuthDataSource(private val auth: FirebaseAuth) {
         Unit
     }
 
+    // Direct password update on authenticated Firebase user.
+    suspend fun changePassword(newPassword: String): Result<Unit> = runCatching {
+        val user = auth.currentUser ?: error("User not authenticated")
+        user.updatePassword(newPassword).await()
+    }
+
     fun observeAuthState() = auth.currentUser
 }

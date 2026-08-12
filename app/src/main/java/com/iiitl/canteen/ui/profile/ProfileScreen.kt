@@ -44,6 +44,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 import androidx.compose.material.icons.filled.Feedback
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,8 +63,16 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     onViewHistory: () -> Unit,
     onSuggestionClick: () -> Unit = {},
+    onChangePassword: (suspend (String) -> Result<Unit>)? = null,
     onBack: () -> Unit
 ) {
+    val scope = rememberCoroutineScope()
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var isUpdatingPassword by remember { mutableStateOf(false) }
+    var passwordSuccessMsg by remember { mutableStateOf<String?>(null) }
+    var passwordErrorMsg by remember { mutableStateOf<String?>(null) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -199,6 +218,44 @@ fun ProfileScreen(
                                         }
                                     }
                                 }
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 12.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant
+                                )
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            newPassword = ""
+                                            confirmPassword = ""
+                                            passwordSuccessMsg = null
+                                            passwordErrorMsg = null
+                                            showChangePasswordDialog = true
+                                        },
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = "Change Password",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Column {
+                                        Text(
+                                            text = "Change Password",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "Update your account password",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -221,6 +278,97 @@ fun ProfileScreen(
                     }
                 }
             }
+        }
+
+        if (showChangePasswordDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    if (!isUpdatingPassword) showChangePasswordDialog = false
+                },
+                title = { Text("Change Password", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedTextField(
+                            value = newPassword,
+                            onValueChange = {
+                                newPassword = it
+                                passwordErrorMsg = null
+                            },
+                            label = { Text("New Password") },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedTextField(
+                            value = confirmPassword,
+                            onValueChange = {
+                                confirmPassword = it
+                                passwordErrorMsg = null
+                            },
+                            label = { Text("Confirm Password") },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        if (passwordSuccessMsg != null) {
+                            Text(
+                                text = passwordSuccessMsg!!,
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        if (passwordErrorMsg != null) {
+                            Text(
+                                text = passwordErrorMsg!!,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    val isMatching = newPassword.isNotEmpty() && newPassword == confirmPassword && newPassword.length >= 6
+                    Button(
+                        onClick = {
+                            if (!isMatching || isUpdatingPassword) return@Button
+                            isUpdatingPassword = true
+                            passwordErrorMsg = null
+                            passwordSuccessMsg = null
+                            scope.launch {
+                                val result = onChangePassword?.invoke(newPassword) ?: Result.failure(Exception("Not available"))
+                                isUpdatingPassword = false
+                                result.fold(
+                                    onSuccess = {
+                                        passwordSuccessMsg = "Password updated"
+                                        kotlinx.coroutines.delay(1000)
+                                        showChangePasswordDialog = false
+                                    },
+                                    onFailure = { err ->
+                                        passwordErrorMsg = err.message ?: "Failed to update password"
+                                    }
+                                )
+                            }
+                        },
+                        enabled = isMatching && !isUpdatingPassword
+                    ) {
+                        Text("Update")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showChangePasswordDialog = false },
+                        enabled = !isUpdatingPassword
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }

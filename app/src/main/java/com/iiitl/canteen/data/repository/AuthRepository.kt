@@ -80,6 +80,9 @@ class AuthRepository(
         snapshot.getString("assignedCafeteriaId")?.ifEmpty { null }
     }.getOrNull()
 
+    suspend fun changePassword(newPassword: String): Result<Unit> =
+        authDataSource.changePassword(newPassword)
+
     // callbackFlow bridges Firebase's listener-based auth state callbacks into
     // a Kotlin Flow. awaitClose ensures the listener is removed when the Flow
     // collector is cancelled, preventing a memory leak.
