@@ -353,9 +353,13 @@ private fun StatusProgressRow(currentStatus: OrderStatus) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         progressSteps.forEachIndexed { index, step ->
-            val isPast = progressSteps.indexOf(currentStatus).let { it >= 0 && index <= it }
+            // COLLECTED is not in progressSteps, so treat it as fully completed (all steps done).
+            val currentStepIndex = if (currentStatus == OrderStatus.COLLECTED) progressSteps.lastIndex
+                                   else progressSteps.indexOf(currentStatus)
+            val isPast = currentStepIndex >= 0 && index <= currentStepIndex
             val dotColor = if (isPast) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.surfaceVariant
+
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
@@ -378,7 +382,7 @@ private fun StatusProgressRow(currentStatus: OrderStatus) {
             }
 
             if (index < progressSteps.lastIndex) {
-                val lineColor = if (progressSteps.indexOf(currentStatus).let { it >= 0 && index < it })
+                val lineColor = if (currentStepIndex >= 0 && index < currentStepIndex)
                     MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                 Box(
                     modifier = Modifier
@@ -391,6 +395,7 @@ private fun StatusProgressRow(currentStatus: OrderStatus) {
                     }
                 }
             }
+
         }
     }
 }
