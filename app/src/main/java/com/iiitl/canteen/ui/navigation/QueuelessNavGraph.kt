@@ -406,11 +406,15 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
                 onChangePassword = { newPassword ->
                     appContainer.authRepository.changePassword(newPassword)
                 },
+                onForgotPassword = {
+                    appContainer.authRepository.sendPasswordResetEmail()
+                },
                 onBack = {
                     navController.popBackStack()
                 }
             )
         }
+
 
         composable(Routes.SUGGESTION) {
             val uid = appContainer.authRepository.getCurrentUserId() ?: ""

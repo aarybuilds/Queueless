@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -23,9 +24,14 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +41,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Row
@@ -47,6 +54,22 @@ import com.iiitl.canteen.R
 @Composable
 fun LoginScreen(viewModel: LoginViewModel) {
     val state by viewModel.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
+
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var resetEmail by remember { mutableStateOf("") }
+    var isSendingReset by remember { mutableStateOf(false) }
+    var resetSuccessMsg by remember { mutableStateOf<String?>(null) }
+    var resetErrorMsg by remember { mutableStateOf<String?>(null) }
+
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = MaterialTheme.colorScheme.primary,
+        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant,
+        focusedLabelColor = MaterialTheme.colorScheme.primary,
+        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+    )
 
     Box(
         modifier = Modifier
@@ -106,14 +129,6 @@ fun LoginScreen(viewModel: LoginViewModel) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                val textFieldColors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant,
-                    focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                )
 
                 if (!state.isLoginMode) {
                     OutlinedTextField(
@@ -201,6 +216,23 @@ fun LoginScreen(viewModel: LoginViewModel) {
                     }
                 }
 
+                if (state.isLoginMode) {
+                    TextButton(
+                        onClick = {
+                            resetEmail = state.email
+                            resetSuccessMsg = null
+                            resetErrorMsg = null
+                            showForgotPasswordDialog = true
+                        }
+                    ) {
+                        Text(
+                            text = "Forgot password?",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
                 OutlinedButton(
                     onClick = viewModel::toggleMode,
                     shape = RoundedCornerShape(12.dp),
@@ -216,5 +248,108 @@ fun LoginScreen(viewModel: LoginViewModel) {
                 }
             }
         }
+
+        if (showForgotPasswordDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    if (!isSendingReset) showForgotPasswordDialog = false
+                },
+                title = {
+                    Text(
+                        text = "Reset Password",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                containerColor = MaterialTheme.colorScheme.surface,
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = "Enter your email to receive a password reset link.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        OutlinedTextField(
+                            value = resetEmail,
+                            onValueChange = {
+                                resetEmail = it
+                                resetErrorMsg = null
+                                resetSuccessMsg = null
+                            },
+                            label = { Text("Email (@iiitl.ac.in)") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = textFieldColors,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Email,
+                                imeAction = ImeAction.Done
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        if (resetSuccessMsg != null) {
+                            Text(
+                                text = resetSuccessMsg!!,
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        if (resetErrorMsg != null) {
+                            Text(
+                                text = resetErrorMsg!!,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val trimmedEmail = resetEmail.trim()
+                            if (trimmedEmail.isEmpty()) {
+                                resetErrorMsg = "Please enter your email."
+                                return@Button
+                            }
+                            isSendingReset = true
+                            resetErrorMsg = null
+                            resetSuccessMsg = null
+                            scope.launch {
+                                val result = viewModel.sendPasswordResetEmail(trimmedEmail)
+                                isSendingReset = false
+                                result.fold(
+                                    onSuccess = {
+                                        resetSuccessMsg = "Reset link sent! Check your inbox."
+                                    },
+                                    onFailure = { err ->
+                                        resetErrorMsg = err.message ?: "Failed to send reset link."
+                                    }
+                                )
+                            }
+                        },
+                        enabled = !isSendingReset && resetEmail.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Send reset link", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showForgotPasswordDialog = false },
+                        enabled = !isSendingReset
+                    ) {
+                        Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            )
+        }
     }
 }
+

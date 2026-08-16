@@ -67,6 +67,7 @@ fun ProfileScreen(
     onViewHistory: () -> Unit,
     onSuggestionClick: () -> Unit = {},
     onChangePassword: (suspend (String) -> Result<Unit>)? = null,
+    onForgotPassword: (suspend () -> Result<Unit>)? = null,
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -74,8 +75,10 @@ fun ProfileScreen(
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var isUpdatingPassword by remember { mutableStateOf(false) }
+    var isSendingReset by remember { mutableStateOf(false) }
     var passwordSuccessMsg by remember { mutableStateOf<String?>(null) }
     var passwordErrorMsg by remember { mutableStateOf<String?>(null) }
+
 
     Scaffold(
         topBar = {
@@ -366,8 +369,45 @@ fun ProfileScreen(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
+
+                        TextButton(
+                            onClick = {
+                                if (isUpdatingPassword || isSendingReset) return@TextButton
+                                isSendingReset = true
+                                passwordErrorMsg = null
+                                passwordSuccessMsg = null
+                                scope.launch {
+                                    val result = onForgotPassword?.invoke() ?: Result.failure(Exception("Not available"))
+                                    isSendingReset = false
+                                    result.fold(
+                                        onSuccess = {
+                                            passwordSuccessMsg = "Reset link sent to your email."
+                                        },
+                                        onFailure = { err ->
+                                            passwordErrorMsg = err.message ?: "Failed to send reset email."
+                                        }
+                                    )
+                                }
+                            },
+                            enabled = !isUpdatingPassword && !isSendingReset
+                        ) {
+                            if (isSendingReset) {
+                                CircularProgressIndicator(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text(
+                                text = "Forgot password?",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 },
+
                 confirmButton = {
                     val isMatching = newPassword.isNotEmpty() && newPassword == confirmPassword && newPassword.length >= 6
                     Button(

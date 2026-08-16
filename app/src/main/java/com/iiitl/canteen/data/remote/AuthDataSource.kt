@@ -49,5 +49,11 @@ class AuthDataSource(private val auth: FirebaseAuth) {
         user.updatePassword(newPassword).await()
     }
 
+    // Dispatches Firebase password reset link to user's registered inbox.
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> = runCatching {
+        auth.sendPasswordResetEmail(email).await()
+    }
+
     fun observeAuthState() = auth.currentUser
 }
+

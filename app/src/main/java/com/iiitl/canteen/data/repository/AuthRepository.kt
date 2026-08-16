@@ -80,10 +80,24 @@ class AuthRepository(
         snapshot.getString("assignedCafeteriaId")?.ifEmpty { null }
     }.getOrNull()
 
+    // Updates authenticated user's password directly.
     suspend fun changePassword(newPassword: String): Result<Unit> =
         authDataSource.changePassword(newPassword)
 
+    // Sends reset email to explicit address (unauthenticated login flow).
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> =
+        authDataSource.sendPasswordResetEmail(email)
+
+
+    // Sends reset email to current authenticated user.
+    suspend fun sendPasswordResetEmail(): Result<Unit> {
+        val email = authDataSource.getCurrentUserEmail()
+            ?: return Result.failure(IllegalStateException("User is not authenticated."))
+        return authDataSource.sendPasswordResetEmail(email)
+    }
+
     // callbackFlow bridges Firebase's listener-based auth state callbacks into
+
     // a Kotlin Flow. awaitClose ensures the listener is removed when the Flow
     // collector is cancelled, preventing a memory leak.
     fun observeAuthState(): Flow<Boolean> = callbackFlow {

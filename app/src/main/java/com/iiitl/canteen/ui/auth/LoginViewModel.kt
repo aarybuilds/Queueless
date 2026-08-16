@@ -59,4 +59,10 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
             )
         }
     }
+
+    // Delegates password reset request to auth repository.
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> =
+        authRepository.sendPasswordResetEmail(email)
 }
+
+
