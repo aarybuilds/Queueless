@@ -314,11 +314,16 @@ fun LoginScreen(viewModel: LoginViewModel) {
                                 resetErrorMsg = "Please enter your email."
                                 return@Button
                             }
+                            if (!trimmedEmail.endsWith("@iiitl.ac.in")) {
+                                resetErrorMsg = "Only @iiitl.ac.in email addresses are supported."
+                                return@Button
+                            }
                             isSendingReset = true
                             resetErrorMsg = null
                             resetSuccessMsg = null
                             scope.launch {
                                 val result = viewModel.sendPasswordResetEmail(trimmedEmail)
+
                                 isSendingReset = false
                                 result.fold(
                                     onSuccess = {
