@@ -102,58 +102,6 @@ Alternatively, a **Cloud Function** triggered on order creation can validate and
 
 ---
 
-## Interview Questions
-
-**Q1. Why is `CartUiState.items` a `Map<MenuItem, Int>` and not a `List<CartItem>`?**
-
-A `Map<MenuItem, Int>` gives O(1) lookup for "how many of this item are in the cart?" and makes `addItem`/`removeItem` trivially correct — you increment or decrement the map value for the key. With `List<CartItem>`, `addItem` would need to `find { it.item == menuItem }` (O(n)), then replace the element or append a new one. The map structure also guarantees that each distinct `MenuItem` appears exactly once, enforcing the uniqueness invariant structurally rather than through a runtime check.
-
-`MenuItem` works as a map key because it is a `data class`, which auto-generates `equals()` and `hashCode()` based on all its properties. Two `MenuItem` objects with the same `id` and `name` are equal as map keys.
-
-**Q2. How does `CartViewModel.recompute()` work, and why is it a private extension function?**
-
-```kotlin
-private fun CartUiState.recompute(): CartUiState = copy(
-    totalAmount = items.entries.sumOf { (item, qty) -> item.price * qty },
-    itemCount = items.values.sum()
-)
-```
-
-`recompute()` is an extension function on `CartUiState` because it produces a new `CartUiState` with derived fields filled in. Being `private` to the `CartViewModel` file means only `CartViewModel` can call it — the `CartUiState` data class itself stays pure (no computed logic embedded in a `get()`). The pattern avoids copy-pasting the `sumOf` and `sum()` calls in both `addItem` and `removeItem`.
-
-**Q3. Why does `OrderDataSource.placeOrder` call `document()` with no argument rather than `document(someId)`?**
-
-`firestore.collection("orders").document()` generates a unique document ID **client-side**, using a UUID-like algorithm. It does not make a network call. This has two advantages: (1) the ID is available synchronously, so we can embed it in the `order.id` field before writing; (2) the `.set()` call is then a simple write rather than an upsert that overwrites an existing document. If we passed an explicit ID that already existed, `.set()` would silently overwrite the existing order.
-
-**Q4. Why does `OrderRepository.placeOrder` convert `CartItem` to `OrderItem` rather than storing `MenuItem` directly?**
-
-`MenuItem` is a live menu entry — it changes when the café edits it. `OrderItem` is a historical record. Snapshotting `priceAtOrder`, `name`, and `isAvailable` at order creation time ensures the order receipt is immutable and accurate regardless of future menu changes. An `OrderItem` is the "what you agreed to buy and at what price" record; a `MenuItem` is "what the café sells right now."
-
-**Q5. `PlaceOrderViewModel` reads `authRepository.getCurrentUserId()` synchronously at the start of `placeOrder()`. What are the failure scenarios?**
-
-`getCurrentUserId()` calls `FirebaseAuth.getInstance().currentUser?.uid`. It can return `null` in two cases:
-1. The user was never signed in (shouldn't happen in normal app flow, but possible if `MainActivity` was started without going through `LoginScreen`).
-2. The user's session was revoked server-side or the token expired while the app was in the background. Firebase Auth typically handles token refresh silently, but a revoked account would return `currentUser == null` on the next check.
-
-In both cases, `PlaceOrderViewModel` sets `errorMessage = "You must be signed in to place an order."` and returns without making a network call. The UI should then navigate back to `LoginScreen`.
-
-**Q6. Why is `CartItem` defined in `OrderRepository.kt` and not in the UI layer?**
-
-`CartItem` is the DTO (Data Transfer Object) that crosses the boundary from the UI layer into the Repository layer. Its definition belongs at the boundary — the Repository file — because that is the consumer that unpacks it into an `Order`. If it were defined in the UI package (e.g., inside `CartScreen.kt`), the Repository would import a UI-layer type, inverting the dependency direction. Clean Architecture requires that the inner layers (Repository, DataSource) never depend on the outer layers (UI).
-
-**Q7. Why does `PlaceOrderUiState.placedOrderId` going non-null trigger navigation rather than a separate one-shot event?**
-
-One-shot events (e.g., a `SharedFlow<NavigationEvent>`) are the common alternative. They have a subtle problem: if the UI is not collecting the flow at the exact moment the event fires (e.g., during a recomposition or a brief lifecycle pause), the event is missed. `StateFlow` with `placedOrderId: String?` is a **state**, not an event. The UI collects it continuously and navigates whenever it sees a non-null value, regardless of when it started collecting. After navigation, the receiving screen can query the order ID from the navigation argument, and `PlaceOrderViewModel` can be cleared or its `placedOrderId` reset.
-
-**Q8. What is the purpose of `viewModelScope.launch` in `PlaceOrderViewModel.placeOrder()`, and what happens to the coroutine if the user closes the screen mid-request?**
-
-`viewModelScope` is a `CoroutineScope` tied to the ViewModel's lifecycle. It is cancelled when `ViewModel.onCleared()` is called, which happens when the screen is permanently removed from the back stack (not on rotation). So:
-
-- **User rotates the screen**: the Activity is recreated, but the ViewModel (and `viewModelScope`) survives. The coroutine keeps running. The new composition collects `uiState` and sees the result when it arrives.
-- **User presses Back before the order completes**: the ViewModel is cleared, `viewModelScope` is cancelled, and the `placeOrder` coroutine is cancelled at the next suspension point (`.await()`). The Firestore write may or may not have completed by then — if it did, the order exists in Firestore; if it didn't, it doesn't. This is an edge case that would require a Cloud Function or a retry mechanism to handle robustly.
-
----
-
 ## 5. Max 3 Open Orders Enforcement
 
 To prevent queue flooding, Queueless enforces that a student may have at most 3 active (non-terminal) orders across all cafeterias simultaneously. Active statuses are defined as `PLACED`, `AWAITING_CONFIRMATION`, `ACCEPTED`, and `PREPARING`.

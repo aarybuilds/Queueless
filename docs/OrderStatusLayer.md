@@ -95,31 +95,3 @@ firebase deploy --only firestore:indexes
 ```
 
 This commits the index definition to version control, which is the recommended practice for production projects.
-
----
-
-## Interview Questions
-
-**Q1. `OrderStatusScreen` receives `onConfirmReducedOrder` and `onCancelOrder` as callbacks rather than calling a ViewModel function directly. Why?**
-
-`OrderStatusScreen` is a stateless composable — it renders state and reports events, it never owns logic. The decision of *what to do* when the student confirms or cancels belongs to the layer above: either the ViewModel (which would call `OrderRepository.updateOrderStatus`) or the navigation host (which might navigate first, then update). If the screen called a ViewModel directly, it would be impossible to preview with a static `OrderStatusUiState`, and any change to the confirmation logic would require modifying the screen. Callback parameters keep the screen a pure rendering function and leave the wiring to the call site.
-
-**Q2. `OrderStatusViewModel` checks `!_uiState.value.isLoading` before emitting "Order not found" for a null document. Why?**
-
-The first emission from `observeOrder` may be `null` if the Firestore SDK serves from cache and the document is not cached yet. At that point, `isLoading` is still `true`. Emitting "Order not found" in that situation would show an error that disappears a fraction of a second later when the real document arrives. The guard ensures "Order not found" is only shown after at least one valid (non-null) document has been received and then subsequently a null arrives — meaning the document was deleted after we started observing it.
-
-**Q3. The `progressSteps` list in `OrderStatusScreen` only includes `PLACED`, `ACCEPTED`, `PREPARING`, `READY`. What happens visually for `CANCELLED`, `REJECTED`, or `EXPIRED`?**
-
-`progressSteps.indexOf(currentStatus)` returns `-1` for statuses not in the list. The condition `it >= 0 && index <= it` is false for all steps, so all dots and connectors render in `outlineVariant` (unfilled). The progress row shows as entirely grey/unfilled. The `StatusBanner` composable then displays the appropriate red explanatory text below the progress row, making it clear to the student that the order did not complete successfully. Terminal states are not forced into the linear progress metaphor because they represent a branch, not a step.
-
-**Q4. Why is `dateFormatter` a file-level `val` in `OrderHistoryScreen.kt` rather than created inside the `OrderHistoryRow` composable?**
-
-`SimpleDateFormat` construction is not trivial — it parses the format string and initialises locale data. If it were created inside `OrderHistoryRow`, it would be recreated on every recomposition of every row. At 20 orders in the history list, that is 20 `SimpleDateFormat` instantiations per recomposition. Moving it to a file-level `val` creates it exactly once when the class is loaded. This is the Compose equivalent of hoisting expensive state out of the render path. (Note: `SimpleDateFormat` is not thread-safe; the file-level `val` is safe here because Compose recomposition always happens on the main thread.)
-
-**Q5. The order history query uses `orderBy("placedAt", DESCENDING)`. What happens to historical orders that were created before the `placedAt` field existed in the schema?**
-
-Firestore excludes documents from query results if the queried field is missing or null. Old orders without a `placedAt` field would simply not appear in the history list. This is the correct behaviour — an order without a `placedAt` is malformed data that cannot be meaningfully sorted. The current `Order` data class defaults `placedAt` to `0L`, so any properly created order has this field. Documents created manually in the Console or by an older app version without this field would be silently excluded.
-
-**Q6. `OrderHistoryViewModel` and `OrderStatusViewModel` both have an `init { viewModelScope.launch { ... .collect { } } }` pattern. If the student opens Order History, then opens Order Status, then navigates back — are both listeners still alive?**
-
-Only the listener that belongs to the currently active ViewModel. When the student navigates back from Order Status to Order History, the Order Status screen is removed from the back stack (assuming it is not retained). This triggers `ViewModel.onCleared()` on `OrderStatusViewModel`, which cancels `viewModelScope`, which cancels the `collect` coroutine. `callbackFlow`'s `awaitClose` block then runs, calling `registration.remove()` to detach the Firestore listener. Meanwhile, `OrderHistoryViewModel` was never cleared (it is still on the back stack), so its listener remains alive and the history updates in real time. Each ViewModel's listener lifetime is exactly bounded by its ViewModel's lifetime.

@@ -97,27 +97,3 @@ These fields record which staff member accepted the order. They exist for accoun
 `noShowCount` records how many times a student placed an order and did not collect it. This field exists for a planned feature (restricting ordering privileges after repeated no-shows). Initialising it to `0` in the model ensures that freshly created user documents start at the correct baseline.
 
 `role` defaults to `UserRole.STUDENT` because students self-register through the app. Staff accounts are created manually in Firebase Console with a `role: "CAFE_STAFF"` field, and the Repository layer maps that string back to `UserRole.CAFE_STAFF` when fetching the document.
-
----
-
-## Interview Questions
-
-**Q1. Why do all data class fields have default values, and what goes wrong if one doesn't?**
-
-Firestore's `toObject<T>()` uses Java reflection to construct objects. It calls the **no-argument constructor** and then sets each field. Kotlin generates a no-arg constructor automatically only when all parameters have defaults. If even one parameter lacks a default — say, `val uid: String` (no default) — Kotlin generates a constructor that requires `uid` to be passed. Firestore then fails at runtime with `java.lang.RuntimeException: Could not deserialize object. No-arg constructor found` (the exact wording varies by SDK version). This failure only appears at runtime, not at compile time, so it is easy to miss in testing.
-
-**Q2. What is the conceptual difference between `MenuItem` and `OrderItem`? Why not just store `MenuItem` directly inside `Order`?**
-
-`MenuItem` is **current truth** — it reflects what the café offers right now. `OrderItem` is **historical truth** — it records what the customer ordered and what they agreed to pay. Embedding `MenuItem` inside `Order` would mean the order's price and name update whenever the menu changes, which would corrupt order history. The snapshot approach (`OrderItem.priceAtOrder`, `OrderItem.name`) ensures a receipt is immutable after placement, just like a paper receipt.
-
-**Q3. `Order.availableTotal` is declared with `val ... get() = ...` rather than as a regular property. What is the exact difference and why does it matter for Firestore?**
-
-A regular `val` (`val availableTotal: Double = computeIt()`) stores its value in a backing field, which is a constructor parameter from Firestore's perspective. A `val` with a custom `get()` has **no backing field**: the getter body runs on every access, and the property is never stored or serialised. Firestore's `@DocumentId` annotation aside, the SDK serialises only fields that have backing storage. A custom getter is therefore invisible to Firestore — it is purely a client-side derived value, which is exactly what we want.
-
-**Q4. `claimedAt`, `readyAt`, and `collectedAt` are `Long?` not `Long`. Why?**
-
-Using `0L` as "not yet happened" is a sentinel pattern — a magic value that means something other than its literal meaning. Sentinel patterns are error-prone: a developer who forgets the convention might treat `0L` as epoch time. `Long?` (`null` = not yet happened) is unambiguous: the Kotlin compiler will not let you call `.toInstant()` or format a `null` timestamp without an explicit null check. The intent is in the type.
-
-**Q5. Why is `UserRole` an enum rather than a sealed class or a string constant?**
-
-Three reasons: (1) **Exhaustiveness**: a `when (role)` expression on an enum must cover all values or include an `else`; the compiler enforces this. A sealed class would also give exhaustiveness, but adds more boilerplate than warranted for exactly two cases with no associated data. (2) **Serialisation**: Firestore stores enums as their `name` string (`"STUDENT"`, `"CAFE_STAFF"`), and deserialises them back via `Enum.valueOf()`. This is built into the Firestore SDK and requires no custom adapter. (3) **Simplicity**: two values, no state — an enum is the minimum-complexity correct tool.
