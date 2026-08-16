@@ -327,8 +327,9 @@ fun LoginScreen(viewModel: LoginViewModel) {
                                 isSendingReset = false
                                 result.fold(
                                     onSuccess = {
-                                        resetSuccessMsg = "Reset link sent! Check your inbox."
+                                        resetSuccessMsg = "Reset link sent! Check your inbox or spam folder."
                                     },
+
                                     onFailure = { err ->
                                         resetErrorMsg = err.message ?: "Failed to send reset link."
                                     }

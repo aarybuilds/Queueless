@@ -24,12 +24,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+
+
 
 @Composable
 fun EmailVerificationScreen(
@@ -87,6 +90,16 @@ fun EmailVerificationScreen(
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
             )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = "Didn't receive it? Check your spam or junk folder.\nIf found, mark it as 'Not spam' to receive future emails in inbox.",
+                color = Color(0xFFB0B0B0),
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center
+            )
+
 
             if (message != null) {
                 Spacer(modifier = Modifier.height(16.dp))

@@ -402,7 +402,8 @@ fun ProfileScreen(
                                     isSendingReset = false
                                     result.fold(
                                         onSuccess = {
-                                            passwordSuccessMsg = "Reset link sent to your email."
+                                            passwordSuccessMsg = "Reset link sent! Check your inbox or spam folder."
+
                                         },
                                         onFailure = { err ->
                                             passwordErrorMsg = err.message ?: "Failed to send reset email."
