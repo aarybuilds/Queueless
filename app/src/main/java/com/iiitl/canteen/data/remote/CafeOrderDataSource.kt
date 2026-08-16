@@ -31,7 +31,8 @@ class CafeOrderDataSource(private val firestore: FirebaseFirestore) {
         val registration = ordersRef
             .whereEqualTo("cafeteriaId", cafeteriaId)
             .whereIn("status", activeStatuses)
-            .orderBy("placedAt", Query.Direction.ASCENDING)
+            .orderBy("placedAt", Query.Direction.DESCENDING)
+
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
                 val orders = snapshot.documents.mapNotNull { it.toObject(Order::class.java) }
