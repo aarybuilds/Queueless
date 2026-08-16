@@ -243,6 +243,12 @@ The `@iiitl.ac.in` restriction is a domain invariant. Placing validation inside 
 
 ---
 
+## 🤖 AI Disclosure
+
+AI tools were used for code completion, debugging, and architecture guidance during development. All design decisions and implementations were reviewed, understood, and validated before being incorporated into the project.
+
+---
+
 ## 🔮 Future Scope
 
 - **Push Notifications (FCM)** — instant alerts when an order transitions to `READY`.
