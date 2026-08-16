@@ -61,17 +61,17 @@ Hilt generates code that abstracts container creation. Building `AppContainer` m
 ```
 com.iiitl.canteen/
 ├── data/
-│   ├── model/          # Pure Kotlin data classes (User, MenuItem, Order, OrderItem, OrderStatus)
+│   ├── model/          # Pure Kotlin data classes (User, UserRole, MenuItem, Order, OrderItem, OrderStatus)
 │   ├── remote/         # Direct Firebase SDK implementations (Auth, Menu, Order, CafeOrder, Suggestion)
 │   └── repository/     # Business logic & domain validation (Auth, Menu, Order, CafeOrder)
 ├── ui/
-│   ├── auth/           # Login, email verification screens + LoginViewModel
-│   ├── cafeteria/      # Cafeteria selection screen
-│   ├── menu/           # Menu & Cart screens + ViewModels
-│   ├── order/          # Order status & history screens + ViewModels
-│   ├── cafe/           # Cafe staff queue screen + CafeQueueViewModel
-│   ├── profile/        # Profile & Change Password dialog
-│   ├── suggestion/     # Suggestion box screen
+│   ├── auth/           # LoginScreen, EmailVerificationScreen, LoginViewModel
+│   ├── cafeteria/      # CafeteriaSelectionScreen
+│   ├── menu/           # MenuScreen, CartScreen, MenuViewModel, CartViewModel
+│   ├── order/          # OrderStatusScreen, OrderHistoryScreen, OrderStatusViewModel, OrderHistoryViewModel, PlaceOrderViewModel
+│   ├── cafe/           # CafeOrderQueueScreen, CafeOrderQueueViewModel
+│   ├── profile/        # ProfileScreen, ProfileViewModel
+│   ├── suggestion/     # SuggestionScreen (stateless callback-driven feedback form)
 │   ├── navigation/     # QueuelessNavGraph.kt (Zero white-flash transitions)
 │   └── theme/          # Color system, typography hierarchy, QueuelessTheme
 ├── AppContainer.kt     # Manual DI root
@@ -86,13 +86,13 @@ com.iiitl.canteen/
 |-------|-----------|
 | Language | Kotlin |
 | UI Framework | Jetpack Compose + Material 3 |
-| Architecture | MVVM |
+| Architecture | MVVM + Repository Pattern |
 | Authentication | Firebase Authentication (Email/Password) |
 | Database | Cloud Firestore (Real-time listeners) |
 | Navigation | Jetpack Navigation Compose |
-| Concurrency | Kotlin Coroutines + StateFlow / SharedFlow |
+| Concurrency | Kotlin Coroutines + StateFlow |
 | Dependency Injection | Manual (`AppContainer`) |
-| Build Tooling | Gradle 8.14.5, JDK 21, compileSdk 36 |
+| Build Tooling | Gradle 8.14.5, JDK 21, compileSdk 36, minSdk 26, targetSdk 36 |
 
 ---
 
@@ -121,18 +121,18 @@ orders/{orderId}
   totalAmount: Double
   status: OrderStatus
   orderNumber: Int          # 4-digit human-readable alias (#3847)
-  claimedBy: String
-  claimedByName: String
+  claimedBy: String?
+  claimedByName: String?
   placedAt: Long
-  claimedAt: Long
-  readyAt: Long
-  collectedAt: Long
+  claimedAt: Long?
+  readyAt: Long?
+  collectedAt: Long?
 
 users/{uid}
   email: String
   name: String
   rollNumber: String
-  role: String              # STUDENT | CAFE_STAFF
+  role: UserRole            # STUDENT | CAFE_STAFF
   noShowCount: Int
   assignedCafeteriaId: String
 
@@ -202,7 +202,7 @@ Designed around a locked Material 3 dark color palette tailored for campus cante
 ## 🚀 Running Locally
 
 ### Prerequisites
-- Android Studio Hedgehog or later
+- Android Studio Ladybug / Hedgehog or later
 - JDK 21
 - Android device or emulator (API 26+)
 - Firebase project with Auth and Cloud Firestore enabled
@@ -220,7 +220,7 @@ Designed around a locked Material 3 dark color palette tailored for campus cante
 
 ### Staff Account Setup
 1. Firebase Console → Authentication → Create user.
-2. Firestore → `users/{uid}` → set `role: "CAFE_STAFF"` and `assignedCafeteriaId: "nescafe"`.
+2. Firestore → `users/{uid}` → set `role: "CAFE_STAFF"` and `assignedCafeteriaId: "nescafe"` (or `"amul"`).
 
 ---
 
