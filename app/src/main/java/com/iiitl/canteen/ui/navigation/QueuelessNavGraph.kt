@@ -406,6 +406,9 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
                 onChangePassword = { newPassword ->
                     appContainer.authRepository.changePassword(newPassword)
                 },
+                onReAuthenticate = { currentPassword ->
+                    appContainer.authRepository.reAuthenticate(currentPassword)
+                },
                 onForgotPassword = {
                     appContainer.authRepository.sendPasswordResetEmail()
                 },
@@ -414,6 +417,7 @@ fun QueuelessNavGraph(appContainer: AppContainer) {
                 }
             )
         }
+
 
 
         composable(Routes.SUGGESTION) {

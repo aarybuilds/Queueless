@@ -1,5 +1,6 @@
 package com.iiitl.canteen.data.remote
 
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await
 
@@ -49,6 +50,14 @@ class AuthDataSource(private val auth: FirebaseAuth) {
         user.updatePassword(newPassword).await()
     }
 
+    // Re-authenticates user with email credentials before sensitive operations.
+    suspend fun reAuthenticate(email: String, password: String): Result<Unit> = runCatching {
+        val user = auth.currentUser ?: error("User not authenticated")
+        val credential = EmailAuthProvider.getCredential(email, password)
+        user.reauthenticate(credential).await()
+        Unit
+    }
+
     // Dispatches Firebase password reset link to user's registered inbox.
     suspend fun sendPasswordResetEmail(email: String): Result<Unit> = runCatching {
         auth.sendPasswordResetEmail(email).await()
@@ -56,4 +65,5 @@ class AuthDataSource(private val auth: FirebaseAuth) {
 
     fun observeAuthState() = auth.currentUser
 }
+
 

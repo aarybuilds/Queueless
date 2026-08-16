@@ -80,9 +80,17 @@ class AuthRepository(
         snapshot.getString("assignedCafeteriaId")?.ifEmpty { null }
     }.getOrNull()
 
+    // Re-authenticates currently signed-in user using current password.
+    suspend fun reAuthenticate(password: String): Result<Unit> {
+        val email = authDataSource.getCurrentUserEmail()
+            ?: return Result.failure(IllegalStateException("User is not authenticated."))
+        return authDataSource.reAuthenticate(email, password)
+    }
+
     // Updates authenticated user's password directly.
     suspend fun changePassword(newPassword: String): Result<Unit> =
         authDataSource.changePassword(newPassword)
+
 
     // Sends reset email to explicit address (unauthenticated login flow).
     suspend fun sendPasswordResetEmail(email: String): Result<Unit> =

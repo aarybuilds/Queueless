@@ -67,17 +67,20 @@ fun ProfileScreen(
     onViewHistory: () -> Unit,
     onSuggestionClick: () -> Unit = {},
     onChangePassword: (suspend (String) -> Result<Unit>)? = null,
+    onReAuthenticate: (suspend (String) -> Result<Unit>)? = null,
     onForgotPassword: (suspend () -> Result<Unit>)? = null,
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     var showChangePasswordDialog by remember { mutableStateOf(false) }
+    var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var isUpdatingPassword by remember { mutableStateOf(false) }
     var isSendingReset by remember { mutableStateOf(false) }
     var passwordSuccessMsg by remember { mutableStateOf<String?>(null) }
     var passwordErrorMsg by remember { mutableStateOf<String?>(null) }
+
 
 
     Scaffold(
@@ -247,6 +250,7 @@ fun ProfileScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
+                                            currentPassword = ""
                                             newPassword = ""
                                             confirmPassword = ""
                                             passwordSuccessMsg = null
@@ -326,10 +330,26 @@ fun ProfileScreen(
                         )
 
                         OutlinedTextField(
+                            value = currentPassword,
+                            onValueChange = {
+                                currentPassword = it
+                                passwordErrorMsg = null
+                                passwordSuccessMsg = null
+                            },
+                            label = { Text("Current Password") },
+                            singleLine = true,
+                            colors = textFieldColors,
+                            visualTransformation = PasswordVisualTransformation(),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedTextField(
                             value = newPassword,
                             onValueChange = {
                                 newPassword = it
                                 passwordErrorMsg = null
+                                passwordSuccessMsg = null
                             },
                             label = { Text("New Password") },
                             singleLine = true,
@@ -344,8 +364,9 @@ fun ProfileScreen(
                             onValueChange = {
                                 confirmPassword = it
                                 passwordErrorMsg = null
+                                passwordSuccessMsg = null
                             },
-                            label = { Text("Confirm Password") },
+                            label = { Text("Confirm New Password") },
                             singleLine = true,
                             colors = textFieldColors,
                             visualTransformation = PasswordVisualTransformation(),
@@ -409,21 +430,35 @@ fun ProfileScreen(
                 },
 
                 confirmButton = {
-                    val isMatching = newPassword.isNotEmpty() && newPassword == confirmPassword && newPassword.length >= 6
+                    val isFormValid = currentPassword.isNotBlank() &&
+                            newPassword.isNotBlank() &&
+                            confirmPassword.isNotBlank() &&
+                            newPassword == confirmPassword &&
+                            newPassword.length >= 6
                     Button(
                         onClick = {
-                            if (!isMatching || isUpdatingPassword) return@Button
+                            if (!isFormValid || isUpdatingPassword) return@Button
                             isUpdatingPassword = true
                             passwordErrorMsg = null
                             passwordSuccessMsg = null
                             scope.launch {
-                                val result = onChangePassword?.invoke(newPassword) ?: Result.failure(Exception("Not available"))
+                                val reauthResult = onReAuthenticate?.invoke(currentPassword)
+                                    ?: Result.failure(Exception("Re-authentication unavailable"))
+                                if (reauthResult.isFailure) {
+                                    isUpdatingPassword = false
+                                    passwordErrorMsg = "Current password is incorrect"
+                                    return@launch
+                                }
+
+                                val changeResult = onChangePassword?.invoke(newPassword)
+                                    ?: Result.failure(Exception("Password change unavailable"))
                                 isUpdatingPassword = false
-                                result.fold(
+                                changeResult.fold(
                                     onSuccess = {
-                                        passwordSuccessMsg = "Password updated"
-                                        kotlinx.coroutines.delay(1000)
-                                        showChangePasswordDialog = false
+                                        passwordSuccessMsg = "Password updated successfully"
+                                        currentPassword = ""
+                                        newPassword = ""
+                                        confirmPassword = ""
                                     },
                                     onFailure = { err ->
                                         passwordErrorMsg = err.message ?: "Failed to update password"
@@ -431,14 +466,22 @@ fun ProfileScreen(
                                 )
                             }
                         },
-                        enabled = isMatching && !isUpdatingPassword,
+                        enabled = isFormValid && !isUpdatingPassword,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Update", fontWeight = FontWeight.Bold)
+                        if (isUpdatingPassword) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Update", fontWeight = FontWeight.Bold)
+                        }
                     }
                 },
                 dismissButton = {
@@ -451,6 +494,7 @@ fun ProfileScreen(
                 }
             )
         }
+
     }
 }
 
