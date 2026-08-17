@@ -316,7 +316,7 @@ private fun OrderContent(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "₹${"%.2f".format(order.totalAmount)}",
+                            text = "₹${"%.2f".format(order.availableTotal)}",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface

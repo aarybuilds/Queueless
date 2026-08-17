@@ -166,7 +166,7 @@ private fun OrderHistoryCard(order: Order, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "₹${"%.2f".format(order.totalAmount)}",
+                    text = "₹${"%.2f".format(order.availableTotal)}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
