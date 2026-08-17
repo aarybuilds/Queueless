@@ -46,8 +46,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
 import com.iiitl.canteen.data.model.Order
 import com.iiitl.canteen.data.model.OrderItem
 import com.iiitl.canteen.data.model.OrderStatus
@@ -96,6 +98,16 @@ fun CafeOrderQueueScreen(
                     )
                 }
 
+                uiState.errorMessage != null -> {
+                    Text(
+                        text = uiState.errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.align(Alignment.Center).padding(24.dp)
+                    )
+                }
+
                 uiState.orders.isEmpty() -> {
                     Text(
                         text = "No active orders in queue",
@@ -104,6 +116,7 @@ fun CafeOrderQueueScreen(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
+
 
                 else -> {
                     val readyOrders = uiState.orders.filter { it.status == OrderStatus.READY }

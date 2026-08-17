@@ -49,8 +49,10 @@ class CafeOrderQueueViewModel(
                     }
                 }
                 .collect { orders ->
-                    _uiState.update { it.copy(orders = orders, isLoading = false, errorMessage = null) }
+                    val sortedOrders = orders.sortedByDescending { it.placedAt }
+                    _uiState.update { it.copy(orders = sortedOrders, isLoading = false, errorMessage = null) }
                 }
+
         }
     }
 

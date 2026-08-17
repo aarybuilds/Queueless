@@ -31,7 +31,8 @@ class CafeOrderDataSource(private val firestore: FirebaseFirestore) {
         val registration = ordersRef
             .whereEqualTo("cafeteriaId", cafeteriaId)
             .whereIn("status", activeStatuses)
-            .orderBy("placedAt", Query.Direction.DESCENDING)
+            .orderBy("placedAt", Query.Direction.ASCENDING)
+
 
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
@@ -54,11 +55,13 @@ class CafeOrderDataSource(private val firestore: FirebaseFirestore) {
         firestore.runTransaction { transaction ->
             val docRef = ordersRef.document(orderId)
             val snapshot = transaction.get(docRef)
-            val currentStatus = snapshot.getString("status")
+            val order = snapshot.toObject(Order::class.java)
+                ?: throw Exception("Order not found.")
 
-            if (currentStatus != OrderStatus.PLACED.name) {
+            if (order.status != OrderStatus.PLACED) {
                 throw Exception("Order already claimed or no longer available.")
             }
+
 
             transaction.update(
                 docRef,
