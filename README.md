@@ -14,6 +14,7 @@ Built for the **OverEngineered App Wing** selection task.
 | Release | APK |
 |---------|-----|
 | v1.0.0 | [Download APK](https://github.com/aarybuilds/Queueless/releases/tag/v1.0.0) |
+| v1.1.0 | [Download APK](https://github.com/aarybuilds/Queueless/releases/tag/v1.1.0) |
 
 ---
 
