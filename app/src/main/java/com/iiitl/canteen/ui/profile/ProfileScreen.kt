@@ -18,10 +18,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Storefront
+
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -72,6 +75,7 @@ fun ProfileScreen(
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    val isStudent = uiState.role.uppercase() == "STUDENT" || uiState.role.isEmpty()
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
@@ -97,14 +101,17 @@ fun ProfileScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onSuggestionClick) {
-                        Icon(
-                            imageVector = Icons.Default.Feedback,
-                            contentDescription = "Suggestion Box",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    if (isStudent) {
+                        IconButton(onClick = onSuggestionClick) {
+                            Icon(
+                                imageVector = Icons.Default.Feedback,
+                                contentDescription = "Suggestion Box",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 },
+
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
@@ -170,17 +177,21 @@ fun ProfileScreen(
 
                         Spacer(modifier = Modifier.height(6.dp))
 
-                        val isStudent = uiState.role.uppercase() == "STUDENT" || uiState.role.isEmpty()
+                        val roleText = when (uiState.role.uppercase()) {
+                            "STUDENT" -> "Student"
+                            "CAFE_STAFF" -> "Cafe Staff"
+                            else -> uiState.role.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }
+                        }
                         AssistChip(
                             onClick = {},
                             label = {
                                 Text(
-                                    text = uiState.role.ifEmpty { "STUDENT" },
+                                    text = roleText,
                                     fontWeight = FontWeight.Bold
                                 )
                             },
                             colors = AssistChipDefaults.assistChipColors(
-                                containerColor = if (isStudent) Color(0xFF2E7D32) else Color(0xFFFFB300),
+                                containerColor = Color(0xFF2E7D32),
                                 labelColor = Color.White
                             )
                         )
@@ -201,6 +212,16 @@ fun ProfileScreen(
                                 )
 
                                 if (isStudent) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 12.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                    ProfileInfoItem(
+                                        icon = Icons.Default.Badge,
+                                        title = "Roll Number",
+                                        subtitle = uiState.rollNumber
+                                    )
+
                                     HorizontalDivider(
                                         modifier = Modifier.padding(vertical = 12.dp),
                                         color = MaterialTheme.colorScheme.surfaceVariant
@@ -239,55 +260,70 @@ fun ProfileScreen(
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
-                                }
 
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = 12.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant
-                                )
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            currentPassword = ""
-                                            newPassword = ""
-                                            confirmPassword = ""
-                                            passwordSuccessMsg = null
-                                            passwordErrorMsg = null
-                                            showChangePasswordDialog = true
-                                        },
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Lock,
-                                        contentDescription = "Change Password",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(24.dp)
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 12.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant
                                     )
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = "Change Password",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.onSurface
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                currentPassword = ""
+                                                newPassword = ""
+                                                confirmPassword = ""
+                                                passwordSuccessMsg = null
+                                                passwordErrorMsg = null
+                                                showChangePasswordDialog = true
+                                            },
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Lock,
+                                            contentDescription = "Change Password",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(24.dp)
                                         )
-                                        Text(
-                                            text = "Update your account password",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        Spacer(modifier = Modifier.width(16.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "Change Password",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = "Update your account password",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                            contentDescription = "Go",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                        contentDescription = "Go",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                } else {
+                                    if (uiState.assignedCafeteriaId.isNotEmpty()) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(vertical = 12.dp),
+                                            color = MaterialTheme.colorScheme.surfaceVariant
+                                        )
+                                        val cafeName = uiState.assignedCafeteriaId.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }
+                                        ProfileInfoItem(
+                                            icon = Icons.Default.Storefront,
+                                            title = "Cafeteria",
+                                            subtitle = cafeName
+                                        )
+                                    }
                                 }
                             }
                         }
+
+
                     }
 
                     OutlinedButton(

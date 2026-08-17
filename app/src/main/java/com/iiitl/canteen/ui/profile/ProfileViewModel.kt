@@ -13,6 +13,8 @@ data class ProfileUiState(
     val name: String = "",
     val email: String = "",
     val role: String = "",
+    val rollNumber: String = "",
+    val assignedCafeteriaId: String = "",
     val isLoading: Boolean = true
 )
 
@@ -29,11 +31,17 @@ class ProfileViewModel(
             if (uid != null) {
                 val profile = authRepository.getUserProfile(uid)
                 if (profile != null) {
+                    // Fetch assigned cafeteria ID explicitly from the repository for staff accounts
+                    val assignedCafeteriaId = if (profile.role.name == "CAFE_STAFF") {
+                        authRepository.getAssignedCafeteriaId(uid) ?: ""
+                    } else ""
                     _uiState.update {
                         it.copy(
                             name = profile.name,
                             email = profile.email,
                             role = profile.role.name,
+                            rollNumber = profile.rollNumber,
+                            assignedCafeteriaId = assignedCafeteriaId,
                             isLoading = false
                         )
                     }
@@ -50,3 +58,4 @@ class ProfileViewModel(
         authRepository.signOut()
     }
 }
+
